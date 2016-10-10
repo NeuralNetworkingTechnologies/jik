@@ -1,0 +1,172 @@
+/*!
+  The MIT License (MIT)
+
+  Copyright (c)2016 Olivier Soares
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+ */
+
+
+#ifndef CORE_LAYER_H_
+#define CORE_LAYER_H_
+
+
+#include <core/mat.h>
+#include <core/param.h>
+#include <core/state.h>
+#include <memory>
+#include <vector>
+#include <string>
+
+
+namespace jik {
+
+
+/*!
+ *  \class  Layer
+ *  \brief  Base layer class
+ *
+ * Any layer must derive from this base class.
+ */
+template <typename Dtype>
+class Layer {
+  // Public types
+ public:
+  typedef Dtype Type;
+
+
+  // Protected attributes
+ protected:
+  std::string                              name_;     // Layer name
+  std::vector<std::shared_ptr<Mat<Dtype>>> in_;       // Input  activations
+  std::vector<std::shared_ptr<Mat<Dtype>>> out_;      // Output activations
+  std::vector<std::shared_ptr<Mat<Dtype>>> weight_;   // Weights
+
+
+  // Public methods
+ public:
+  /*!
+   * Constructor.
+   *
+   *  \param[in]  name : layer name
+   *  \param[in]  in   : input activations
+   */
+  Layer(const char*                                     name,
+        const std::vector<std::shared_ptr<Mat<Dtype>>>& in) {
+    name_ = name;
+    in_   = in;
+  }
+
+  /*!
+   * Destructor.
+   */
+  virtual ~Layer() {}
+
+  /*!
+   * Get the layer name.
+   *
+   *  \return Layer name
+   */
+  const char* Name() const {
+    return name_.c_str();
+  }
+
+  /*!
+   * Get the layer input activations.
+   *
+   *  \return Input activations
+   */
+  const std::vector<std::shared_ptr<Mat<Dtype>>>& Input() const {
+    return in_;
+  }
+
+  /*!
+   * Get the layer output activations.
+   *
+   *  \return Output activations
+   */
+  const std::vector<std::shared_ptr<Mat<Dtype>>>& Output() const {
+    return out_;
+  }
+
+  /*!
+   * Set the batch size.
+   *
+   *  \param[in]  batch_size: batch size
+   */
+  void SetBatchSize(uint32_t batch_size) {
+    for (size_t i = 0; i < in_.size(); ++i) {
+      in_[i]->size[3] = batch_size;
+    }
+    for (size_t i = 0; i < out_.size(); ++i) {
+      out_[i]->size[3] = batch_size;
+    }
+  }
+
+  /*!
+   * Clear the derivatives.
+   */
+  virtual void ClearDeriv() {
+    for (size_t i = 0; i < in_.size(); ++i) {
+      in_[i]->ZeroDeriv();
+    }
+    for (size_t i = 0; i < out_.size(); ++i) {
+      out_[i]->ZeroDeriv();
+    }
+    for (size_t i = 0; i < weight_.size(); ++i) {
+      weight_[i]->ZeroDeriv();
+    }
+  }
+
+  /*!
+   * Get the weights.
+   *
+   *  \param[out] weight: list of weights
+   */
+  void GetWeight(std::vector<std::shared_ptr<Mat<Dtype>>>* weight) const {
+    weight->reserve(weight->size() + weight_.size());
+    for (size_t i = 0; i < weight_.size(); ++i) {
+      weight->push_back(weight_[i]);
+    }
+  }
+
+  /*!
+   * Forward pass.
+   * The forward pass calculates the outputs activations
+   * in regard to the inputs activations and weights.
+   *
+   *  \param[in]  state: state
+   */
+  virtual void Forward(const State& state) = 0;
+
+  /*!
+   * Backward pass.
+   * The backward pass calculates the inputs activations and weights
+   * derivatives in regard to the outputs activations derivatives.
+   *
+   *  \param[in]  state: state
+   */
+  virtual void Backward(const State& state) = 0;
+};
+
+
+}  // namespace jik
+
+
+#endif  // CORE_LAYER_H_
