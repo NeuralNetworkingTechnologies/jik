@@ -8,7 +8,7 @@ This project is implementing basic algorithms for two of the main deep learning 
 * *Feed-forward Neural Networks* (FFNN) (including *Convolutional Neural Network* (CNN) models)
 * *Recurrent Neural Networks* (RNN) (including *Long Short-Term Memory* (LSTM) models)
 
-It is currently only implemented on the CPU (mono-hreaded) but a multi-threaded version as well as a CUDA version will
+It is currently only implemented on the CPU (mono-threaded) but a multi-threaded version as well as a CUDA version will
 be coming, hopefully soon.
 
 I tried to keep the design of the system very simple and lightweight so it's easy to parse and understand.

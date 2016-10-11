@@ -1,5 +1,10 @@
-# Compiled files
+# Compiled python files
 *.pyc
 
 # Common build directory name
 build
+
+# Downloaded datasets
+data/mnist
+data/cifar10
+data/textgen

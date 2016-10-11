@@ -154,12 +154,12 @@ class LayerConv: public Layer<Dtype> {
             Dtype val = static_cast<Dtype>(0);
             for (uint32_t x = 0; x < filter_width_; ++x) {
               int32_t in_x = start_x + x;
-              if (in_x < 0 || in_x >= in_width) {
+              if (in_x < 0 || static_cast<uint32_t>(in_x) >= in_width) {
                 continue;
               }
               for (uint32_t y = 0; y < filter_height_; ++y) {
                 int32_t in_y = start_y + y;
-                if (in_y < 0 || in_y >= in_height) {
+                if (in_y < 0 || static_cast<uint32_t>(in_y) >= in_height) {
                   continue;
                 }
                 for (uint32_t in_channel = 0; in_channel < num_input;
@@ -223,12 +223,12 @@ class LayerConv: public Layer<Dtype> {
             Dtype dv = out_deriv_data[deriv_index];
             for (uint32_t x = 0; x < filter_width_; ++x) {
               int32_t in_x = start_x + x;
-              if (in_x < 0 || in_x >= in_width) {
+              if (in_x < 0 || static_cast<uint32_t>(in_x) >= in_width) {
                 continue;
               }
               for (uint32_t y = 0; y < filter_height_; ++y) {
                 int32_t in_y = start_y + y;
-                if (in_y < 0 || in_y >= in_height) {
+                if (in_y < 0 || static_cast<uint32_t>(in_y) >= in_height) {
                   continue;
                 }
                 for (uint32_t in_channel = 0; in_channel < num_input;

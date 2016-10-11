@@ -55,10 +55,13 @@ bool LogMsg(const std::string& log_file_path, const char* msg, ...) {
   // Log file size
   std::fseek(log_file, 0, SEEK_END);
   int64_t log_file_size = std::ftell(log_file);
+  if (log_file_size < 0) {
+    return false;
+  }
   std::fseek(log_file, 0, SEEK_SET);
 
   // If the file is too large, we delete it
-  if (log_file_size > kLogFileSizeMax) {
+  if (log_file_size > static_cast<int64_t>(kLogFileSizeMax)) {
     std::fclose(log_file);
     log_file = std::fopen(log_file_path.c_str(), "wt");
     if (!log_file) {
