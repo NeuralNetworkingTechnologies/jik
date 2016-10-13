@@ -48,8 +48,9 @@ class SolverSGD: public Solver<Dtype> {
 
   // Protected attributes
  protected:
-  Dtype decay_rate_;  // Decay rate
-  Dtype momentum_;    // Momentum
+  Dtype momentum_;  // Momentum
+  Dtype reg_;       // L2 regularization
+  Dtype clip_;      // Gradient clipping value
 
 
   // Public methods
@@ -62,15 +63,17 @@ class SolverSGD: public Solver<Dtype> {
    *  \param[in]  save_each    : save the model every n steps
    *  \param[in]  lr_scale_each: save the model every n steps
    *  \param[in]  lr_scale     : learning rate scale
-   *  \param[in]  decay_rate   : decay rate
    *  \param[in]  momentum     : momentum
+   *  \param[in]  reg          : L2 regularization
+   *  \param[in]  clip         : gradient clipping
    */
   SolverSGD(uint32_t print_each, uint32_t test_each, uint32_t save_each,
             uint32_t lr_scale_each, Dtype lr_scale,
-            Dtype decay_rate, Dtype momentum):
+            Dtype momentum, Dtype reg, Dtype clip):
     Parent(print_each, test_each, save_each, lr_scale_each, lr_scale) {
-    decay_rate_ = decay_rate;
-    momentum_   = momentum;
+    momentum_ = momentum;
+    reg_      = reg;
+    clip_     = clip;
   }
 
   /*!
@@ -83,43 +86,51 @@ class SolverSGD: public Solver<Dtype> {
    *
    *  \param[in]  weight       : weights
    *  \param[in]  weight_prev  : previous weights
-   *  \param[in]  learning_rate: learning rate
    *  \param[in]  batch_size   : batch size
-   *  \param[in]  decay_rate   : decay rate
+   *  \param[in]  learning_rate: learning rate
    *  \param[in]  momentum     : momentum
+   *  \param[in]  reg          : L2 regularization
+   *  \param[in]  clip         : gradient clipping
    */
   static void SGD(const std::shared_ptr<Mat<Dtype>>& weight,
                   const std::shared_ptr<Mat<Dtype>>& weight_prev,
-                  Dtype learning_rate, uint32_t batch_size,
-                  Dtype decay_rate, Dtype momentum) {
+                  uint32_t batch_size, Dtype learning_rate,
+                  Dtype momentum, Dtype reg, Dtype clip) {
     Dtype*       weight_data       = weight->Data();
     const Dtype* weight_deriv_data = weight->DerivData();
     Dtype*       weight_prev_data  = weight_prev->Data();
+
     for (uint32_t i = 0; i < weight->Size(); ++i) {
+      // SGD with momentum
       Dtype dv = weight_deriv_data[i] / batch_size;
-      dv       = momentum * weight_prev_data[i] +
-                 weight_data[i] * learning_rate * decay_rate +
-                 learning_rate * dv;
+      dv       = momentum * weight_prev_data[i] + dv;
+
+      // Save previous value for next iteration
       weight_prev_data[i] = dv;
-      weight_data[i]     -= dv;
+
+      // Gradient clip
+      if (dv > clip) {
+        dv = clip;
+      } else if (dv < -clip) {
+        dv = -clip;
+      }
+
+      // Update and regularize
+      weight_data[i] -= learning_rate * dv + reg * weight_data[i];
     }
   }
 
   /*!
    * Learning function.
    *
-   *  \param[in]  model        : model
+   *  \param[in]  batch_size   : batch size
    *  \param[in]  learning_rate: learning rate
    */
-  virtual void Learn(Model<Dtype>* model, Dtype learning_rate) const {
-    if (!model) {
-      return;
-    }
+  virtual void Learn(uint32_t batch_size, Dtype learning_rate) const {
     for (size_t i = 0; i < Parent::weight_.size(); ++i) {
-      SGD(Parent::weight_[i], Parent::weight_prev_[i], learning_rate,
-          model->BatchSize(), decay_rate_, momentum_);
+      SGD(Parent::weight_[i], Parent::weight_prev_[i],
+          batch_size, learning_rate, momentum_, reg_, clip_);
     }
-    model->ClearDeriv();
   }
 };
 

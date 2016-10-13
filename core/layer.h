@@ -42,7 +42,15 @@ namespace jik {
  *  \class  Layer
  *  \brief  Base layer class
  *
- * Any layer must derive from this base class.
+ * Any layer must derive from this base class and
+ * implement the forward and backward functions.
+ *
+ * A layer is composed of input and output activations which are the
+ * result of a given operation and calculated during the forward pass.
+ * A layer eventually has weights that the model will try to learn.
+ *
+ * The input and weight derivatives are calculated during the backward pass
+ * and propagated back to the previous layer.
  */
 template <typename Dtype>
 class Layer {

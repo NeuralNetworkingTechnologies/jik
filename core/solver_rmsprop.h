@@ -49,9 +49,9 @@ class SolverRMSprop: public Solver<Dtype> {
 
   // Protected attributes
  protected:
-  Dtype decay_rate_;      // Decay rate
-  Dtype reg_strength_;    // L2 regularization strength
-  Dtype gradient_clip_;   // Gradient clipping value
+  Dtype decay_rate_;  // Decay rate
+  Dtype reg_;         // L2 regularization
+  Dtype clip_;        // Gradient clipping value
 
 
   // Public methods
@@ -65,16 +65,16 @@ class SolverRMSprop: public Solver<Dtype> {
    *  \param[in]  lr_scale_each: save the model every n steps
    *  \param[in]  lr_scale     : learning rate scale
    *  \param[in]  decay_rate   : decay rate
-   *  \param[in]  reg_strength : L2 regularization strength
-   *  \param[in]  gradient_clip: gradient clipping value
+   *  \param[in]  reg          : L2 regularization
+   *  \param[in]  clip         : gradient clipping
    */
   SolverRMSprop(uint32_t print_each, uint32_t test_each, uint32_t save_each,
                 uint32_t lr_scale_each, Dtype lr_scale,
-                Dtype decay_rate, Dtype reg_strength, Dtype gradient_clip):
+                Dtype decay_rate, Dtype reg, Dtype clip):
     Parent(print_each, test_each, save_each, lr_scale_each, lr_scale) {
-    decay_rate_    = decay_rate;
-    reg_strength_  = reg_strength;
-    gradient_clip_ = gradient_clip;
+    decay_rate_ = decay_rate;
+    reg_        = reg;
+    clip_       = clip;
   }
 
   /*!
@@ -87,56 +87,54 @@ class SolverRMSprop: public Solver<Dtype> {
    *
    *  \param[in]  weight       : weights
    *  \param[in]  weight_prev  : previous weights
-   *  \param[in]  learning_rate: learning rate
    *  \param[in]  batch_size   : batch size
+   *  \param[in]  learning_rate: learning rate
    *  \param[in]  decay_rate   : decay rate
-   *  \param[in]  reg_strength : L2 regularization strength
-   *  \param[in]  gradient_clip: gradient clipping value
+   *  \param[in]  reg          : L2 regularization
+   *  \param[in]  clip         : gradient clipping
    */
   static void RMSprop(const std::shared_ptr<Mat<Dtype>>& weight,
                       const std::shared_ptr<Mat<Dtype>>& weight_prev,
-                      Dtype learning_rate, uint32_t batch_size,
-                      Dtype decay_rate, Dtype reg_strength,
-                      Dtype gradient_clip) {
+                      uint32_t batch_size, Dtype learning_rate,
+                      Dtype decay_rate, Dtype reg, Dtype clip) {
   Dtype* weight_data             = weight->Data();
   const Dtype* weight_deriv_data = weight->DerivData();
   Dtype* weight_prev_data        = weight_prev->Data();
 
   for (uint32_t i = 0; i < weight->Size(); ++i) {
       // RMSprop adaptive learning rate
-      Dtype dv            = weight_deriv_data[i] / batch_size;
-      weight_prev_data[i] = decay_rate * weight_prev_data[i] +
-                            (static_cast<Dtype>(1) - decay_rate) * dv * dv;
+      Dtype dv  = weight_deriv_data[i] / batch_size;
+      Dtype ddv = decay_rate * weight_prev_data[i] +
+                  (static_cast<Dtype>(1) - decay_rate) * dv * dv;
+
+      // Save previous value for next iteration
+      weight_prev_data[i] = ddv;
 
       // Gradient clip
-      if (dv > gradient_clip) {
-        dv = gradient_clip;
-      } else if (dv < -gradient_clip) {
-        dv = -gradient_clip;
+      if (dv > clip) {
+        dv = clip;
+      } else if (dv < -clip) {
+        dv = -clip;
       }
 
       // Update and regularize
-      weight_data[i] += -learning_rate * (dv / std::sqrt(weight_prev_data[i] +
-        std::numeric_limits<Dtype>::epsilon())) -
-        reg_strength * weight_data[i];
+      weight_data[i] -= learning_rate * (dv / std::sqrt(weight_prev_data[i] +
+        std::numeric_limits<Dtype>::epsilon())) +
+        reg * weight_data[i];
     }
   }
 
   /*!
    * Learning function.
    *
-   *  \param[in]  model        : model
+   *  \param[in]  batch_size   : batch size
    *  \param[in]  learning_rate: learning rate
    */
-  virtual void Learn(Model<Dtype>* model, Dtype learning_rate) const {
-    if (!model) {
-      return;
-    }
+  virtual void Learn(uint32_t batch_size, Dtype learning_rate) const {
     for (size_t i = 0; i < Parent::weight_.size(); ++i) {
-      RMSprop(Parent::weight_[i], Parent::weight_prev_[i], learning_rate,
-              model->BatchSize(), decay_rate_, reg_strength_, gradient_clip_);
+      RMSprop(Parent::weight_[i], Parent::weight_prev_[i],
+              batch_size, learning_rate, decay_rate_, reg_, clip_);
     }
-    model->ClearDeriv();
   }
 };
 

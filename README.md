@@ -1,17 +1,22 @@
 # jik
 
-release 0.1 (october 2016)
+Release 0.1 (October 2016)
 
 ## Info
 
-This project is implementing basic algorithms for two of the main deep learning models:
-* *Feed-forward Neural Networks* (FFNN) (including *Convolutional Neural Network* (CNN) models)
-* *Recurrent Neural Networks* (RNN) (including *Long Short-Term Memory* (LSTM) models)
+This project is implementing basic algorithms for two of the main deep
+learning models:
+* *Feed-forward Neural Networks* (FFNN) (including *Convolutional Neural
+  Network* (CNN) models)
+* *Recurrent Neural Networks* (RNN) (including *Long Short-Term Memory* (LSTM)
+  models)
 
-It is currently only implemented on the CPU (mono-threaded) but a multi-threaded version as well as a CUDA version will
-be coming, hopefully soon.
+It is currently only implemented on the CPU (mono-threaded) but a
+multi-threaded version as well as a CUDA version will be coming, hopefully
+soon.
 
-I tried to keep the design of the system very simple and lightweight so it's easy to parse and understand.
+I tried to keep the design of the system very simple and lightweight so it's
+easy to parse and understand.
 There's no dependency by default, making it easy to compile, port and run.
 
 ## Structure
@@ -23,7 +28,8 @@ There's no dependency by default, making it easy to compile, port and run.
 * sandbox: examples
   * mnist  : mnist classifier (classifying the mnist dataset)
   * cifar10: cifar10 classifier (classifying the cifar10 dataset)
-  * textgen: example of RNN (or LSTM) model taking an input text and predicting sentences
+  * textgen: example of RNN (or LSTM) model taking an input text and
+    predicting sentences
 
 ## Requirements
 
@@ -91,11 +97,18 @@ Then, from the build directory, you can run the following sandbox examples.
 
 ### Mnist classifier
 
-This example will classify the Mnist dataset (see here: http://yann.lecun.com/exdb/mnist).
+This example will classify the Mnist dataset (see here:
+http://yann.lecun.com/exdb/mnist).
 
 Training a CNN model, without batch normalization:
 ```sh
 sandbox/mnist/mnist -dataset ../data/mnist -train
+```
+
+Training a CNN model, without batch normalization, using a SGD solver (instead
+of a RMSprop solver by default):
+```sh
+sandbox/mnist/mnist -dataset ../data/mnist -train -solver sgd
 ```
 
 Training a CNN model, with batch normalization:
@@ -125,11 +138,18 @@ sandbox/mnist/mnist -dataset ../data/mnist -model ../model/mnist_conv.model -tra
 
 ### Cifar10 classifier
 
-This example will classify the Cifar10 dataset (see here: http://www.cs.toronto.edu/~kriz/cifar.html).
+This example will classify the Cifar10 dataset (see here:
+http://www.cs.toronto.edu/~kriz/cifar.html).
 
 Training a model, without batch normalization:
 ```sh
 sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train
+```
+
+Training a model, without batch normalization, using a SGD solver (instead of
+a RMSprop solver by default):
+```sh
+sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train -solver sgd
 ```
 
 Training a model, with batch normalization:
@@ -154,7 +174,8 @@ sandbox/cifar10/cifar10 -dataset ../data/cifar10 -model ../model/cifar10.model -
 
 ### Text generator
 
-This example will take an input text file and start generating sentences with the same style using a RNN or LSTM.
+This example will take an input text file and start generating sentences with
+the same style using a RNN or LSTM.
 Feel free to use your own text file.
 
 Training a RNN model:

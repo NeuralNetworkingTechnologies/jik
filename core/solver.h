@@ -91,10 +91,10 @@ class Solver {
   /*!
    * Learning function.
    *
-   *  \param[in]  model        : model
+   *  \param[in]  batch_size   : batch size
    *  \param[in]  learning_rate: learning rate
    */
-  virtual void Learn(Model<Dtype>* model, Dtype learning_rate) const = 0;
+  virtual void Learn(uint32_t batch_size, Dtype learning_rate) const = 0;
 
   /*!
    * Train a model.
@@ -124,8 +124,14 @@ class Solver {
     uint32_t save  = 0;
     uint32_t lr    = 0;
     for (uint32_t step = 0; step < num_step; ++step) {
+      // Train (calculate output values and input/weight derivatives)
       Dtype loss = model->Train();
-      Learn(model, learning_rate);
+
+      // Learn (update the weights)
+      Learn(model->BatchSize(), learning_rate);
+
+      // Clean
+      model->ClearDeriv();
 
       if ((++print >= print_each_) || (step == num_step - 1)) {
         Report(kInfo, "Step %ld: lr = %f, loss = %f",

@@ -754,6 +754,20 @@ int main(int argc, char* argv[]) {
     solver_type = "rmsprop";
   }
 
+  // Printing hyperparameters
+  Report(kInfo, "Batch size              : %d", batch_size);
+  Report(kInfo, "Learning rate           : %f", learning_rate);
+  Report(kInfo, "Decay rate              : %f", decay_rate);
+  Report(kInfo, "Momentum                : %f", momentum);
+  Report(kInfo, "L2 regularization       : %f", reg);
+  Report(kInfo, "Gradient clipping       : %f", clip);
+  Report(kInfo, "Number of steps         : %d", num_step);
+  Report(kInfo, "Print each              : %d", print_each);
+  Report(kInfo, "Test each               : %d", test_each);
+  Report(kInfo, "Save each               : %d", save_each);
+  Report(kInfo, "Scale learning rate each: %d", lr_scale_each);
+  Report(kInfo, "Learning rate scale     : %f", lr_scale);
+
   // Create the model
   Cifar10Model<Dtype> model(model_name, dataset_path,
                             Cifar10Dataset<Dtype>::NumClass(),
@@ -776,8 +790,8 @@ int main(int argc, char* argv[]) {
   if (!std::strcmp(solver_type, "sgd")) {
     Report(kInfo, "Creating SGD solver");
     solver = new SolverSGD<Dtype>(print_each, test_each, save_each,
-                                  lr_scale_each, lr_scale, decay_rate,
-                                  momentum);
+                                  lr_scale_each, lr_scale,
+                                  momentum, reg, clip);
   } else if (!std::strcmp(solver_type, "rmsprop")) {
     Report(kInfo, "Creating RMSprop solver");
     solver = new SolverRMSprop<Dtype>(print_each, test_each, save_each,
