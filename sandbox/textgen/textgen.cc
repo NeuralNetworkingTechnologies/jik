@@ -102,11 +102,11 @@ class TextgenDataset: public Dataset {
    *
    *  \return     Error?
    */
-  virtual bool Load(const std::string& dataset_path) {
+  virtual bool Load(const char* dataset_path) {
     std::string line;
     std::ifstream fp(dataset_path);
     if (fp.fail()) {
-      Report(kError, "Can't open file '%s'", dataset_path.c_str());
+      Report(kError, "Can't open file '%s'", dataset_path);
       return false;
     }
 
@@ -228,7 +228,7 @@ class TextgenDataLayer: public LayerData<Dtype> {
     param.Get("dataset_path", &dataset_path);
     param.Get("num_predict" , &num_predict_);
 
-    if (!dataset_.Load(dataset_path)) {
+    if (!dataset_.Load(dataset_path.c_str())) {
       return;
     }
 

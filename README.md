@@ -95,9 +95,9 @@ Make sure you downloaded the data before running the sandbox examples.
 
 Then, from the build directory, you can run the following sandbox examples.
 
-### Mnist classifier
+### MNIST classifier
 
-This example will classify the Mnist dataset (see here:
+This example will classify the MNIST dataset (see here:
 http://yann.lecun.com/exdb/mnist).
 
 Training a CNN model, without batch normalization:
@@ -136,9 +136,38 @@ Fine-tuning a pretrained CNN model:
 sandbox/mnist/mnist -dataset ../data/mnist -model ../model/mnist_conv.model -train -name mnist_finetune
 ```
 
-### Cifar10 classifier
+Testing a pretrained CNN model on the synthetic (rendered) MNIST dataset:
+```sh
+sandbox/mnist/mnist -dataset ../data/mnist_render -model ../model/mnist_conv.model
+```
 
-This example will classify the Cifar10 dataset (see here:
+You can see that the model is behaving poorly here. It has been trained on
+real MNIST dataset but hasn't seen any rendered data.
+Let's try to train a model on both the real and synthetic MNIST datasets
+(mixed model):
+```sh
+sandbox/mnist/mnist -dataset ../data/mnist:../data/mnist_render -train
+```
+
+Let's now test this new mixed model (pretrained) on the real MNIST dataset,
+the synthetic MNIST dataset and both at the same time:
+```sh
+sandbox/mnist/mnist -dataset ../data/mnist -model ../model/mnist_mix_conv.model
+sandbox/mnist/mnist -dataset ../data/mnist_render -model ../model/mnist_mix_conv.model
+sandbox/mnist/mnist -dataset ../data/mnist:../data/mnist_render -model ../model/mnist_mix_conv.model
+```
+
+You can see that it's now giving very accurate results on all datasets.
+We did the same thing for the FC model (mixed model):
+```sh
+sandbox/mnist/mnist -dataset ../data/mnist -fc -model ../model/mnist_mix_fc.model
+sandbox/mnist/mnist -dataset ../data/mnist_render -fc -model ../model/mnist_mix_fc.model
+sandbox/mnist/mnist -dataset ../data/mnist:../data/mnist_render -fc -model ../model/mnist_mix_fc.model
+```
+
+### CIFAR10 classifier
+
+This example will classify the CIFAR10 dataset (see here:
 http://www.cs.toronto.edu/~kriz/cifar.html).
 
 Training a model, without batch normalization:

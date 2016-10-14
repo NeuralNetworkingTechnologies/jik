@@ -240,27 +240,35 @@ class Cifar10Dataset: public Dataset {
    *
    *  \return     Error?
    */
-  virtual bool Load(const std::string& dataset_path) {
-    // Training set
+  virtual bool Load(const char* dataset_path) {
+    // Clear datasets
     train_.clear();
-    std::string train1_file(dataset_path + "/data_batch_1.bin");
-    std::string train2_file(dataset_path + "/data_batch_2.bin");
-    std::string train3_file(dataset_path + "/data_batch_3.bin");
-    std::string train4_file(dataset_path + "/data_batch_4.bin");
-    std::string train5_file(dataset_path + "/data_batch_5.bin");
-    if (!ReadDataset(train1_file, &train_) ||
-        !ReadDataset(train2_file, &train_) ||
-        !ReadDataset(train3_file, &train_) ||
-        !ReadDataset(train4_file, &train_) ||
-        !ReadDataset(train5_file, &train_)) {
-      return false;
-    }
-
-    // Testing set
     test_.clear();
-    std::string test_file(dataset_path + "/test_batch.bin");
-    if (!ReadDataset(test_file, &test_)) {
+
+    const char* path = std::strtok(const_cast<char*>(dataset_path), ":");
+    while (path) {
+      Report(kInfo, "Loading dataset from '%s'", path);
+      std::string spath = std::string(path);
+
+      // Training set
+      std::string train1_file(spath + "/data_batch_1.bin");
+      std::string train2_file(spath + "/data_batch_2.bin");
+      std::string train3_file(spath + "/data_batch_3.bin");
+      std::string train4_file(spath + "/data_batch_4.bin");
+      std::string train5_file(spath + "/data_batch_5.bin");
+      if (!ReadDataset(train1_file, &train_) ||
+          !ReadDataset(train2_file, &train_) ||
+          !ReadDataset(train3_file, &train_) ||
+          !ReadDataset(train4_file, &train_) ||
+          !ReadDataset(train5_file, &train_)) {
         return false;
+      }
+
+      // Testing set
+      std::string test_file(spath + "/test_batch.bin");
+      if (!ReadDataset(test_file, &test_)) {
+          return false;
+      }
     }
 
     return true;
@@ -322,7 +330,7 @@ class Cifar10DataLayer: public LayerData<Dtype> {
     param.Get("dataset_path", &dataset_path);
     param.Get("batch_size"  , &batch_size);
 
-    if (!dataset_.Load(dataset_path)) {
+    if (!dataset_.Load(dataset_path.c_str())) {
       return;
     }
 
@@ -782,7 +790,7 @@ int main(int argc, char* argv[]) {
   if (!train) {
     Report(kInfo, "Testing model '%s'", model_name);
     Dtype acc = model.Test();
-    Report(kInfo, "Accuracy = %f", acc);
+    Report(kInfo, "Accuracy: %f", acc);
     return 0;
   }
 

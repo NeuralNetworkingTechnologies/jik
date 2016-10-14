@@ -57,7 +57,7 @@ class Dataset {
    *
    *  \return     Error?
    */
-  virtual bool Load(const std::string& dataset_path) = 0;
+  virtual bool Load(const char* dataset_path) = 0;
 };
 
 

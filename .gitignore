@@ -6,5 +6,6 @@ build
 
 # Downloaded datasets
 data/mnist
+data/mnist_render
 data/cifar10
 data/textgen

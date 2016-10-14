@@ -135,7 +135,8 @@ void Report(LogLevel level, const char* msg, ...) {
   // Add a timestamp to the message
   const size_t kTimeSize = 0x20;
   char time[kTimeSize];
-  time_t now = std::time(nullptr);
+  std::time_t now;
+  std::time(&now);
   std::strftime(time, kTimeSize, "%Y-%m-%d %H:%M:%S", std::localtime(&now));
   std::fprintf(stderr, "[%s @ %s]: %s\n", smsg, time, fmsg);
   LogTrace(fmsg);

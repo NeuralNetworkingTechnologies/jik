@@ -292,21 +292,30 @@ class MnistDataset: public Dataset {
    *
    *  \return     Error?
    */
-  virtual bool Load(const std::string& dataset_path) {
-    // Training set
+  virtual bool Load(const char* dataset_path) {
+    // Clear datasets
     train_.clear();
-    std::string train_file_image(dataset_path + "/train-images-idx3-ubyte");
-    std::string train_file_label(dataset_path + "/train-labels-idx1-ubyte");
-    if (!ReadDataset(train_file_image, train_file_label, &train_)) {
-      return false;
-    }
-
-    // Testing set
     test_.clear();
-    std::string test_file_image(dataset_path + "/t10k-images-idx3-ubyte");
-    std::string test_file_label(dataset_path + "/t10k-labels-idx1-ubyte");
-    if (!ReadDataset(test_file_image, test_file_label, &test_)) {
+
+    const char* path = std::strtok(const_cast<char*>(dataset_path), ":");
+    while (path) {
+      Report(kInfo, "Loading dataset from '%s'", path);
+      std::string spath = std::string(path);
+
+      // Training set
+      std::string train_file_image(spath + "/train-images-idx3-ubyte");
+      std::string train_file_label(spath + "/train-labels-idx1-ubyte");
+      if (!ReadDataset(train_file_image, train_file_label, &train_)) {
         return false;
+      }
+
+      // Testing set
+      std::string test_file_image(spath + "/t10k-images-idx3-ubyte");
+      std::string test_file_label(spath + "/t10k-labels-idx1-ubyte");
+      if (!ReadDataset(test_file_image, test_file_label, &test_)) {
+          return false;
+      }
+      path = std::strtok(nullptr, ":");
     }
 
     return true;
@@ -367,7 +376,7 @@ class MnistDataLayer: public LayerData<Dtype> {
     param.Get("dataset_path", &dataset_path);
     param.Get("batch_size"  , &batch_size);
 
-    if (!dataset_.Load(dataset_path)) {
+    if (!dataset_.Load(dataset_path.c_str())) {
       return;
     }
 
@@ -848,7 +857,7 @@ int main(int argc, char* argv[]) {
   if (!train) {
     Report(kInfo, "Testing model '%s'", model_name);
     Dtype acc = model.Test();
-    Report(kInfo, "Accuracy = %f", acc);
+    Report(kInfo, "Accuracy: %f", acc);
     return 0;
   }
 

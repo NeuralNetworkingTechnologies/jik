@@ -31,6 +31,7 @@
 #include <memory>
 #include <cmath>
 #include <limits>
+#include <ctime>
 #include <vector>
 #include <string>
 
@@ -119,6 +120,8 @@ class Solver {
       weight_prev_[i] = std::make_shared<Mat<Dtype>>(weight_[i]->size, false);
     }
 
+    std::clock_t start = std::clock();
+
     uint32_t print = 0;
     uint32_t test  = 0;
     uint32_t save  = 0;
@@ -134,13 +137,15 @@ class Solver {
       model->ClearDeriv();
 
       if ((++print >= print_each_) || (step == num_step - 1)) {
-        Report(kInfo, "Step %ld: lr = %f, loss = %f",
-               step + 1, learning_rate, loss);
+        Report(kInfo, "Step #%ld LR: %f, Loss: %f, Speed: %f steps/sec",
+               step + 1, learning_rate, loss, print_each_ /
+               (static_cast<double>(std::clock() - start) / CLOCKS_PER_SEC));
         print = 0;
+        start = std::clock();
       }
 
       if ((++test >= test_each_) || (step == num_step - 1)) {
-        Report(kInfo, "Step %ld: accuracy = %f",
+        Report(kInfo, "Step #%d Accuracy: %f",
                step + 1, model->Test());
         test = 0;
       }
@@ -155,7 +160,7 @@ class Solver {
       }
 
       if (++lr >= lr_scale_each_) {
-        Report(kInfo, "Step %ld: Update learning rate from %f to %f, scale %f",
+        Report(kInfo, "Step #%d Update learning rate from %f to %f (scale %f)",
                step + 1, learning_rate, learning_rate * lr_scale_, lr_scale_);
         learning_rate *= lr_scale_;
         lr = 0;

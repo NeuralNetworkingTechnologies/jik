@@ -132,16 +132,35 @@ class LayerMult: public Layer<Dtype> {
     Dtype*       in1_deriv_data = Parent::in_[0]->DerivData();
     Dtype*       in2_deriv_data = Parent::in_[1]->DerivData();
 
+    uint32_t m = Parent::in_[0]->size[0];
+    uint32_t n = Parent::in_[1]->size[1];
+    uint32_t k = Parent::in_[0]->size[1];
+
+    uint32_t in1_size = Parent::in_[0]->size[0]  * Parent::in_[0]->size[1];
+    uint32_t in2_size = Parent::in_[1]->size[0]  * Parent::in_[1]->size[1];
+    uint32_t out_size = Parent::out_[0]->size[0] * Parent::out_[0]->size[1];
+
+    uint32_t num_channel = Parent::out_[0]->size[2];
+    uint32_t batch_size  = Parent::out_[0]->size[3];
+
     // in1_deriv = in2 * out_deriv
     // in2_deriv = in1 * out_deriv
-    for (uint32_t i = 0; i < Parent::in_[0]->size[0]; ++i) {
-      for (uint32_t j = 0; j < Parent::in_[1]->size[1]; ++j) {
-        Dtype dv = out_deriv_data[Parent::in_[1]->size[1] * i + j];
-        for (uint32_t k = 0; k < Parent::in_[0]->size[1]; ++k) {
-          uint32_t i1         = Parent::in_[0]->size[1] * i + k;
-          uint32_t i2         = Parent::in_[1]->size[1] * k + j;
-          in1_deriv_data[i1] += in2_data[i2] * dv;
-          in2_deriv_data[i2] += in1_data[i1] * dv;
+    for (uint32_t batch = 0; batch < batch_size; ++batch) {
+      for (uint32_t channel = 0; channel < num_channel; ++channel) {
+        uint32_t offset     = channel + num_channel * batch;
+        uint32_t in1_offset = offset * in1_size;
+        uint32_t in2_offset = offset * in2_size;
+        uint32_t out_offset = offset * out_size;
+        for (uint32_t i = 0; i < m; ++i) {
+          for (uint32_t j = 0; j < n; ++j) {
+            Dtype dv = out_deriv_data[out_offset + n * i + j];
+            for (uint32_t l = 0; l < k; ++l) {
+              uint32_t i1 = in1_offset + k * i + l;
+              uint32_t i2 = in2_offset + n * l + j;
+              in1_deriv_data[i1] += in2_data[i2] * dv;
+              in2_deriv_data[i2] += in1_data[i1] * dv;
+            }
+          }
         }
       }
     }
