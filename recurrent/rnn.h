@@ -73,10 +73,12 @@ class Rnn: public Recurrent<Dtype> {
    *  \param[in]  hidden_size: hidden state size
    *  \param[in]  size_out   : output size
    *  \param[in]  range      : value range ([-range/2, range/2])
+   *  \param[in]  batch_size : batch size
    */
   Rnn(const char* name, uint32_t size_in,
       const std::vector<uint32_t>& hidden_size,
-      uint32_t size_out, Dtype range): Recurrent<Dtype>(name) {
+      uint32_t size_out, Dtype range,
+      uint32_t batch_size): Recurrent<Dtype>(name) {
     hidden_size_ = hidden_size;
 
     Dtype hrange   = 0.5f * range;
@@ -91,16 +93,19 @@ class Rnn: public Recurrent<Dtype> {
       hsize = hidden_size_[d];
 
       // Add the gates weights
-      wxh_.push_back(Rand<Dtype>::GenMat(hsize, size_prev,
-                                         1, 1, -hrange, hrange));
-      whh_.push_back(Rand<Dtype>::GenMat(hsize, hsize, 1, 1, -hrange, hrange));
-      bhh_.push_back(std::make_shared<Mat<Dtype>>(hsize, 1));
+      wxh_.push_back(Rand<Dtype>::GenMat(hsize, size_prev, 1, batch_size,
+                                         -hrange, hrange));
+      whh_.push_back(Rand<Dtype>::GenMat(hsize, hsize, 1, batch_size,
+                                         -hrange, hrange));
+      bhh_.push_back(std::make_shared<Mat<Dtype>>(hsize, 1, 1, batch_size));
     }
 
     // Create the decoder weights
-    whd_ = Rand<Dtype>::GenMat(size_out, hsize, 1, 1, -hrange, hrange);
-    bd_  = std::make_shared<Mat<Dtype>>(size_out, 1);
-    wil_ = Rand<Dtype>::GenMat(size_in, size_out, 1, 1, -hrange, hrange);
+    whd_ = Rand<Dtype>::GenMat(size_out, hsize, 1, batch_size,
+                               -hrange, hrange);
+    bd_  = std::make_shared<Mat<Dtype>>(size_out, 1, 1, batch_size);
+    wil_ = Rand<Dtype>::GenMat(size_in, size_out, 1, batch_size,
+                               -hrange, hrange);
   }
 
   /*!
@@ -135,14 +140,17 @@ class Rnn: public Recurrent<Dtype> {
     // Clear all the layers
     Parent::Clear();
 
+    uint32_t batch_size = wil_->size[3];
+
     if (hidden_prev_.empty()) {
       for (uint32_t d = 0; d < hidden_size_.size(); d++) {
         hidden_prev_.push_back(std::make_shared<Mat<Dtype>>(
-          hidden_size_[d], 1));
+          hidden_size_[d], 1, 1, batch_size));
       }
     }
 
-    Parent::in_ = std::make_shared<Mat<Dtype>>(wil_->size[1], 1);
+    Parent::in_ = std::make_shared<Mat<Dtype>>(wil_->size[1],
+                                               1, 1, batch_size);
     Parent::in_->Data()[index] = static_cast<Dtype>(1);
 
     std::shared_ptr<Mat<Dtype>> x = Parent::Add(

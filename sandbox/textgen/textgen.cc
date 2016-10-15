@@ -103,6 +103,8 @@ class TextgenDataset: public Dataset {
    *  \return     Error?
    */
   virtual bool Load(const char* dataset_path) {
+    Report(kInfo, "Loading dataset '%s'", dataset_path);
+
     std::string line;
     std::ifstream fp(dataset_path);
     if (fp.fail()) {
@@ -225,8 +227,10 @@ class TextgenDataLayer: public LayerData<Dtype> {
     Parent(name) {
     // Parameters
     std::string dataset_path;
+    uint32_t batch_size;
     param.Get("dataset_path", &dataset_path);
     param.Get("num_predict" , &num_predict_);
+    param.Get("batch_size"  , &batch_size);
 
     if (!dataset_.Load(dataset_path.c_str())) {
       return;
@@ -240,7 +244,7 @@ class TextgenDataLayer: public LayerData<Dtype> {
 
     // Create 1 output (label)
     Parent::out_.resize(1);
-    Parent::out_[0] = std::make_shared<Mat<Dtype>>(1, 1, 1, 1);
+    Parent::out_[0] = std::make_shared<Mat<Dtype>>(1, 1, 1, batch_size);
   }
 
   /*!
@@ -367,13 +371,14 @@ class TextgenModel: public R {
    *  \param[in]  size_in    : input size
    *  \param[in]  hidden_size: hidden state size
    *  \param[in]  range      : value range ([-range/2, range/2])
+   *  \param[in]  batch_size : batch size
    */
   TextgenModel(const char* name,
                const std::shared_ptr<TextgenDataLayer<Dtype>>& data_layer,
                uint32_t size_in, const std::vector<uint32_t>& hidden_size,
-               Dtype range):
-    R(name, size_in, hidden_size,
-      data_layer->Dataset().VocabSize() + 1, range) {
+               Dtype range, uint32_t batch_size):
+    R(name, size_in, hidden_size, data_layer->Dataset().VocabSize() + 1,
+      range, batch_size) {
     data_layer_ = data_layer;
   }
 
@@ -387,14 +392,16 @@ class TextgenModel: public R {
    *
    *  \param[in]  dataset_path: path to the dataset
    *  \param[in]  num_predict : number of predictions
+   *  \param[in]  batch_size  : batch size
    *
    *  \return     Data layer
    */
   static std::shared_ptr<TextgenDataLayer<Dtype>> CreateDataLayer(
-    const char* dataset_path, uint32_t num_predict) {
+    const char* dataset_path, uint32_t num_predict, uint32_t batch_size) {
     Param data_param;
     data_param.Add("dataset_path", dataset_path);
     data_param.Add("num_predict" , num_predict);
+    data_param.Add("batch_size"  , batch_size);
     return std::make_shared<TextgenDataLayer<Dtype>>("data1", data_param);
   }
 
@@ -547,18 +554,19 @@ int main(int argc, char* argv[]) {
   const char* model_name   = arg.Arg("-name");
   const char* solver_type  = arg.Arg("-solver");
   Dtype learning_rate, decay_rate, momentum, reg, clip, lr_scale, range;
-  uint32_t num_step, print_each, test_each, save_each,
+  uint32_t batch_size, num_step, print_each, test_each, save_each,
            lr_scale_each, num_predict, embed_size, hs;
+  arg.Arg<uint32_t>("-batchsize"   , 100     , &batch_size);
   arg.Arg<Dtype>   ("-learningrate", 0.001   , &learning_rate);
   arg.Arg<Dtype>   ("-decayrate"   , 0.999   , &decay_rate);
   arg.Arg<Dtype>   ("-momentum"    , 0.9     , &momentum);
   arg.Arg<Dtype>   ("-reg"         , 0.000001, &reg);
   arg.Arg<Dtype>   ("-clip"        , 5.0     , &clip);
-  arg.Arg<uint32_t>("-numstep"     , 500000  , &num_step);
-  arg.Arg<uint32_t>("-printeach"   , 1000    , &print_each);
-  arg.Arg<uint32_t>("-testeach"    , 5000    , &test_each);
-  arg.Arg<uint32_t>("-saveeach"    , 5000    , &save_each);
-  arg.Arg<uint32_t>("-lrscaleeach" , 100000  , &lr_scale_each);
+  arg.Arg<uint32_t>("-numstep"     , 50000   , &num_step);
+  arg.Arg<uint32_t>("-printeach"   , 100     , &print_each);
+  arg.Arg<uint32_t>("-testeach"    , 500     , &test_each);
+  arg.Arg<uint32_t>("-saveeach"    , 500     , &save_each);
+  arg.Arg<uint32_t>("-lrscaleeach" , 10000   , &lr_scale_each);
   arg.Arg<Dtype>   ("-lrscale"     , 0.1     , &lr_scale);
   arg.Arg<uint32_t>("-numpredict"  , 10      , &num_predict);
   arg.Arg<uint32_t>("-embedsize"   , 5       , &embed_size);
@@ -583,6 +591,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Printing hyperparameters
+  Report(kInfo, "Batch size              : %d", batch_size);
   Report(kInfo, "Learning rate           : %f", learning_rate);
   Report(kInfo, "Decay rate              : %f", decay_rate);
   Report(kInfo, "Momentum                : %f", momentum);
@@ -604,13 +613,13 @@ int main(int argc, char* argv[]) {
   if (!std::strcmp(model_type, "rnn")) {
     Report(kInfo, "Creating RNN model '%s'", model_name);
     model = new TextgenModel<Rnn<Dtype>>(model_name,
-      TextgenModel<Rnn<Dtype>>::CreateDataLayer(dataset_path, num_predict),
-      embed_size, {hs, hs}, range);
+      TextgenModel<Rnn<Dtype>>::CreateDataLayer(dataset_path, num_predict,
+      batch_size), embed_size, {hs, hs}, range, batch_size);
   } else if (!std::strcmp(model_type, "lstm")) {
     Report(kInfo, "Creating LSTM model '%s'", model_name);
     model = new TextgenModel<Lstm<Dtype>>(model_name,
-      TextgenModel<Lstm<Dtype>>::CreateDataLayer(dataset_path, num_predict),
-      embed_size, {hs, hs}, range);
+      TextgenModel<Lstm<Dtype>>::CreateDataLayer(dataset_path, num_predict,
+      batch_size), embed_size, {hs, hs}, range, batch_size);
   } else {
     Report(kError, "Unknown model type '%s'", model_type);
     return -1;

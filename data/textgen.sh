@@ -8,4 +8,4 @@ fi
 TEXTGEN_DIR=$(dirname "$0")/textgen
 rm -rf $TEXTGEN_DIR
 mkdir -p $TEXTGEN_DIR
-$WGET -P $TEXTGEN_DIR http://textfiles.com/stories/adv_alad.txt
+$WGET -P $TEXTGEN_DIR http://cs.stanford.edu/people/karpathy/char-rnn/shakespeare_input.txt

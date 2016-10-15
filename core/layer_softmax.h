@@ -58,7 +58,14 @@ class LayerSoftMax: public LayerClassifier<Dtype> {
    */
   LayerSoftMax(const char*                                     name,
                const std::vector<std::shared_ptr<Mat<Dtype>>>& in):
-    Parent(name, in) {}
+    Parent(name, in) {
+      Check(Parent::in_[0]->size[3] == Parent::in_[1]->size[3],
+            "Layer '%s' inputs must have the same batch size", Parent::Name());
+      Check(Parent::in_[1]->size[0] == 1 &&
+            Parent::in_[1]->size[1] == 1 &&
+            Parent::in_[1]->size[2] == 1,
+            "Layer '%s' labels input must have a size 1x1x1xBatchSize");
+  }
 
   /*!
    * Destructor.

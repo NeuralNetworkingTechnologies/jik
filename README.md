@@ -87,7 +87,7 @@ in order to get all the data needed to run the sandbox examples.
 The following will be downloaded:
 * MNIST dataset
 * CIFAR10 dataset
-* a small .txt file with the Adventures of Aladdin short story
+* A text file with Shakespeare input
 
 ## Sandbox examples
 
@@ -209,10 +209,10 @@ Feel free to use your own text file.
 
 Training a RNN model:
 ```sh
-sandbox/textgen/textgen -dataset ../data/textgen/adv_alad.txt -model rnn
+sandbox/textgen/textgen -dataset ../data/textgen/shakespeare_input.txt -model rnn
 ```
 
 Training a LSTM model:
 ```sh
-sandbox/textgen/textgen -dataset ../data/textgen/adv_alad.txt -model lstm
+sandbox/textgen/textgen -dataset ../data/textgen/shakespeare_input.txt -model lstm
 ```
