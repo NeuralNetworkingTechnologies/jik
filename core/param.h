@@ -27,6 +27,7 @@
 #define CORE_PARAM_H_
 
 
+#include <core/log.h>
 #include <string>
 #include <unordered_map>
 
@@ -89,14 +90,14 @@ class Param {
    *  \return     Parameter found?
    */
   template <typename T>
-  bool Get(const char* name,
-           T* val = nullptr, const T* default_val = nullptr) const {
+  bool Get(const char* name, T* val, const T* default_val = nullptr) const {
     std::string sval;
     if (!Get(name, &sval)) {
       if (val) {
         if (default_val) {
           *val = *default_val;
         } else {
+          Report(kError, "No value '%s' found", name);
           *val = static_cast<T>(0);
         }
       }
@@ -118,7 +119,7 @@ class Param {
    *  \return     Parameter found?
    */
   template <typename T>
-  bool Get(const char* name, const T& default_val, T* val = nullptr) const {
+  bool Get(const char* name, const T& default_val, T* val) const {
     return Get(name, val, &default_val);
   }
 

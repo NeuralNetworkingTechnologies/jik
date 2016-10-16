@@ -269,6 +269,9 @@ class Cifar10Dataset: public Dataset {
       if (!ReadDataset(test_file, &test_)) {
           return false;
       }
+
+      // Go to next path
+      path = std::strtok(nullptr, ":");
     }
 
     return true;

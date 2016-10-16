@@ -23,8 +23,8 @@
  */
 
 
-#ifndef CORE_LAYER_ELTWISE_MULT_H_
-#define CORE_LAYER_ELTWISE_MULT_H_
+#ifndef CORE_LAYER_ELTWISE_SCALE_H_
+#define CORE_LAYER_ELTWISE_SCALE_H_
 
 
 #include <core/layer.h>
@@ -37,15 +37,21 @@ namespace jik {
 
 
 /*!
- *  \class  LayerEltwiseMult
- *  \brief  Element wise multiplication (Hadamard product)
+ *  \class  EltwiseScaleLayer
+ *  \brief  Eltwise scale layer
  */
 template <typename Dtype>
-class LayerEltwiseMult: public Layer<Dtype> {
+class EltwiseScaleLayer: public Layer<Dtype> {
   // Public types
  public:
   typedef Dtype         Type;
   typedef Layer<Dtype>  Parent;
+
+
+  // Protected attributes
+ protected:
+  Dtype scale_;   // Scale
+  Dtype bias_;    // Bias
 
 
   // Public methods
@@ -53,22 +59,31 @@ class LayerEltwiseMult: public Layer<Dtype> {
   /*!
    * Constructor.
    *
-   *  \param[in]  name: layer name
-   *  \param[in]  in  : input activations
+   *  \param[in]  name : layer name
+   *  \param[in]  in   : input activations
+   *  \param[in]  param: parameters
    */
-  LayerEltwiseMult(const char*                                     name,
-                   const std::vector<std::shared_ptr<Mat<Dtype>>>& in):
+  EltwiseScaleLayer(const char*                                     name,
+                   const std::vector<std::shared_ptr<Mat<Dtype>>>& in,
+                   const Param&                                    param):
     Parent(name, in) {
-    // Make sure we have 2 inputs and they have the same size
-    Check(Parent::in_.size() == 2, "Layer '%s' must have 2 inputs",
+    // Make sure we have 1 input
+    Check(Parent::in_.size() == 1, "Layer '%s' must have 1 input",
           Parent::Name());
-    Check(Parent::in_[0]->Size() == Parent::in_[1]->Size(),
-          "Layer '%s' inputs must have the same size", Parent::Name());
 
-    // Create 1 output, same size as the inputs
+    // Parameters
+    param.Get("scale", static_cast<Dtype>(1), &scale_);
+    param.Get("bias" , static_cast<Dtype>(0), &bias_);
+
+    // Create 1 output, same size as the input
     Parent::out_.resize(1);
     Parent::out_[0] = std::make_shared<Mat<Dtype>>(Parent::in_[0]->size);
   }
+
+  /*!
+   * Destructor.
+   */
+  virtual ~EltwiseScaleLayer() {}
 
   /*!
    * Forward pass.
@@ -79,12 +94,11 @@ class LayerEltwiseMult: public Layer<Dtype> {
    */
   virtual void Forward(const State& state) {
     Dtype*       out_data = Parent::out_[0]->Data();
-    const Dtype* in1_data = Parent::in_[0]->Data();
-    const Dtype* in2_data = Parent::in_[1]->Data();
+    const Dtype* in_data  = Parent::in_[0]->Data();
 
-    // out = in1 . in2 ("." = Hadamard product)
+    // out = in * scale + bias
     for (uint32_t i = 0; i < Parent::out_[0]->Size(); ++i) {
-      out_data[i] = in1_data[i] * in2_data[i];
+      out_data[i] = in_data[i] * scale_ + bias_;
     }
   }
 
@@ -97,23 +111,16 @@ class LayerEltwiseMult: public Layer<Dtype> {
    */
   virtual void Backward(const State& state) {
     const Dtype* out_deriv_data = Parent::out_[0]->DerivData();
-    const Dtype* in1_data       = Parent::in_[0]->Data();
-    const Dtype* in2_data       = Parent::in_[1]->Data();
-    Dtype*       in1_deriv_data = Parent::in_[0]->DerivData();
-    Dtype*       in2_deriv_data = Parent::in_[1]->DerivData();
+    Dtype*       in_deriv_data  = Parent::in_[0]->DerivData();
 
-    // in1_deriv = in2 * out_deriv
-    // in2_deriv = in1 * out_deriv
+    // in_deriv = out_deriv * scale
     for (uint32_t i = 0; i < Parent::out_[0]->Size(); ++i) {
-      Dtype dv           = out_deriv_data[i];
-      in1_deriv_data[i] += in2_data[i] * dv;
-      in2_deriv_data[i] += in1_data[i] * dv;
+      in_deriv_data[i] += out_deriv_data[i] * scale_;
     }
   }
 };
 
-
 }  // namespace jik
 
 
-#endif  // CORE_LAYER_ELTWISE_MULT_H_
+#endif  // CORE_LAYER_ELTWISE_SCALE_H_

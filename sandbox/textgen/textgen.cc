@@ -26,6 +26,7 @@
 #include <core/arg_parse.h>
 #include <core/log.h>
 #include <core/dataset.h>
+#include <core/layer_eltwise_scale.h>
 #include <core/layer_softmax.h>
 #include <core/solver_sgd.h>
 #include <core/solver_rmsprop.h>
@@ -359,6 +360,7 @@ class TextgenModel: public R {
   // Protected attributes
  protected:
   std::shared_ptr<TextgenDataLayer<Dtype>> data_layer_;   // Data layer
+  Dtype                                    temperature_;  // Temperature
 
 
   // Public methods
@@ -375,11 +377,13 @@ class TextgenModel: public R {
    */
   TextgenModel(const char* name,
                const std::shared_ptr<TextgenDataLayer<Dtype>>& data_layer,
-               uint32_t size_in, const std::vector<uint32_t>& hidden_size,
+               Dtype temperature, uint32_t size_in,
+               const std::vector<uint32_t>& hidden_size,
                Dtype range, uint32_t batch_size):
     R(name, size_in, hidden_size, data_layer->Dataset().VocabSize() + 1,
       range, batch_size) {
-    data_layer_ = data_layer;
+    data_layer_  = data_layer;
+    temperature_ = temperature;
   }
 
   /*!
@@ -398,11 +402,11 @@ class TextgenModel: public R {
    */
   static std::shared_ptr<TextgenDataLayer<Dtype>> CreateDataLayer(
     const char* dataset_path, uint32_t num_predict, uint32_t batch_size) {
-    Param data_param;
-    data_param.Add("dataset_path", dataset_path);
-    data_param.Add("num_predict" , num_predict);
-    data_param.Add("batch_size"  , batch_size);
-    return std::make_shared<TextgenDataLayer<Dtype>>("data1", data_param);
+    Param param;
+    param.Add("dataset_path", dataset_path);
+    param.Add("num_predict" , num_predict);
+    param.Add("batch_size"  , batch_size);
+    return std::make_shared<TextgenDataLayer<Dtype>>("data1", param);
   }
 
   /*!
@@ -412,6 +416,17 @@ class TextgenModel: public R {
    */
   virtual void Create(uint32_t index) {
     Parent::Create(index);
+
+    // Add a scale (temperature) layer
+    if (temperature_ > std::numeric_limits<Dtype>::epsilon() &&
+        temperature_ < static_cast<Dtype>(1) -
+        std::numeric_limits<Dtype>::epsilon()) {
+      Param param;
+      param.Add("scale", temperature_);
+      Parent::out_ = Parent::Add(std::make_shared<EltwiseScaleLayer<Dtype>>(
+        "", std::initializer_list<std::shared_ptr<Mat<Dtype>>>{Parent::out_},
+        param))[0];
+    }
 
     // Add a softmax layer
     std::shared_ptr<Mat<Dtype>> label = data_layer_->Output()[0];
@@ -553,7 +568,8 @@ int main(int argc, char* argv[]) {
   const char* model_type   = arg.Arg("-model");
   const char* model_name   = arg.Arg("-name");
   const char* solver_type  = arg.Arg("-solver");
-  Dtype learning_rate, decay_rate, momentum, reg, clip, lr_scale, range;
+  Dtype learning_rate, decay_rate, momentum, reg,
+        clip, lr_scale, temperature, range;
   uint32_t batch_size, num_step, print_each, test_each, save_each,
            lr_scale_each, num_predict, embed_size, hs;
   arg.Arg<uint32_t>("-batchsize"   , 100     , &batch_size);
@@ -568,6 +584,7 @@ int main(int argc, char* argv[]) {
   arg.Arg<uint32_t>("-saveeach"    , 500     , &save_each);
   arg.Arg<uint32_t>("-lrscaleeach" , 10000   , &lr_scale_each);
   arg.Arg<Dtype>   ("-lrscale"     , 0.1     , &lr_scale);
+  arg.Arg<Dtype>   ("-temperature" , 1.0     , &temperature);
   arg.Arg<uint32_t>("-numpredict"  , 10      , &num_predict);
   arg.Arg<uint32_t>("-embedsize"   , 5       , &embed_size);
   arg.Arg<uint32_t>("-hs"          , 20      , &hs);
@@ -603,6 +620,7 @@ int main(int argc, char* argv[]) {
   Report(kInfo, "Save each               : %d", save_each);
   Report(kInfo, "Scale learning rate each: %d", lr_scale_each);
   Report(kInfo, "Learning rate scale     : %f", lr_scale);
+  Report(kInfo, "Temperature             : %f", temperature);
   Report(kInfo, "Number of predictions   : %d", num_predict);
   Report(kInfo, "Embedded size           : %d", embed_size);
   Report(kInfo, "Hidden size             : %d", hs);
@@ -614,12 +632,12 @@ int main(int argc, char* argv[]) {
     Report(kInfo, "Creating RNN model '%s'", model_name);
     model = new TextgenModel<Rnn<Dtype>>(model_name,
       TextgenModel<Rnn<Dtype>>::CreateDataLayer(dataset_path, num_predict,
-      batch_size), embed_size, {hs, hs}, range, batch_size);
+      batch_size), temperature, embed_size, {hs, hs}, range, batch_size);
   } else if (!std::strcmp(model_type, "lstm")) {
     Report(kInfo, "Creating LSTM model '%s'", model_name);
     model = new TextgenModel<Lstm<Dtype>>(model_name,
       TextgenModel<Lstm<Dtype>>::CreateDataLayer(dataset_path, num_predict,
-      batch_size), embed_size, {hs, hs}, range, batch_size);
+      batch_size), temperature, embed_size, {hs, hs}, range, batch_size);
   } else {
     Report(kError, "Unknown model type '%s'", model_type);
     return -1;
