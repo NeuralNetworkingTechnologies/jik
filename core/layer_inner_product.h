@@ -68,6 +68,8 @@ class LayerInnerProduct: public Layer<Dtype> {
           Parent::Name());
 
     // Parameters
+    bool use_bias;
+    param.Get("use_bias", true, &use_bias);
     uint32_t num_output;
     param.Get("num_output", &num_output);
 
@@ -78,13 +80,15 @@ class LayerInnerProduct: public Layer<Dtype> {
     // Create 2 weights: kernel filter and bias
     // Initialize the filter matrix with some random values
     // (gaussian distribution)
-    Parent::weight_.resize(2);
+    Parent::weight_.resize(use_bias ? 2 : 1);
     Parent::weight_[0] = Rand<Dtype>::GenMatGauss(
       num_input, num_output, 1, 1, static_cast<Dtype>(0),
       std::sqrt(static_cast<Dtype>(1) / num_input));
 
     // Create the bias and initialize it to 0
-    Parent::weight_[1] = std::make_shared<Mat<Dtype>>(1, 1, num_output);
+    if (use_bias) {
+      Parent::weight_[1] = std::make_shared<Mat<Dtype>>(1, 1, num_output);
+    }
 
     // Create 1 output
     Parent::out_.resize(1);
@@ -108,7 +112,8 @@ class LayerInnerProduct: public Layer<Dtype> {
     Dtype*       out_data    = Parent::out_[0]->Data();
     const Dtype* in_data     = Parent::in_[0]->Data();
     const Dtype* filter_data = Parent::weight_[0]->Data();
-    const Dtype* bias_data   = Parent::weight_[1]->Data();
+    const Dtype* bias_data   = (Parent::weight_.size() > 1) ?
+                               Parent::weight_[1]->Data() : nullptr;
 
     uint32_t num_out   = Parent::out_[0]->size[2];
     uint32_t num_in    = Parent::weight_[0]->size[0];
@@ -124,7 +129,10 @@ class LayerInnerProduct: public Layer<Dtype> {
           uint32_t filter_index = num_in * i + j;
           ip += in_data[in_offset + j] * filter_data[filter_index];
         }
-        out_data[out_offset + i] = bias_data[i] + ip;
+        out_data[out_offset + i] = ip;
+        if (bias_data) {
+          out_data[out_offset + i] += bias_data[i];
+        }
       }
     }
   }
@@ -142,7 +150,8 @@ class LayerInnerProduct: public Layer<Dtype> {
     const Dtype* filter_data       = Parent::weight_[0]->Data();
     Dtype*       in_deriv_data     = Parent::in_[0]->DerivData();
     Dtype*       filter_deriv_data = Parent::weight_[0]->DerivData();
-    Dtype*       bias_deriv_data   = Parent::weight_[1]->DerivData();
+    Dtype*       bias_deriv_data   = (Parent::weight_.size() > 1) ?
+                                     Parent::weight_[1]->DerivData() : nullptr;
 
     uint32_t num_out   = Parent::out_[0]->size[2];
     uint32_t num_in    = Parent::weight_[0]->size[0];
@@ -161,7 +170,9 @@ class LayerInnerProduct: public Layer<Dtype> {
           in_deriv_data[in_offset + j]    += dv * filter_data[filter_index];
           filter_deriv_data[filter_index] += dv * in_data[in_offset + j];
         }
-        bias_deriv_data[i] += dv;
+        if (bias_deriv_data) {
+          bias_deriv_data[i] += dv;
+        }
       }
     }
   }

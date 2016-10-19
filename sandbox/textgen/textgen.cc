@@ -27,7 +27,7 @@
 #include <core/log.h>
 #include <core/dataset.h>
 #include <core/layer_eltwise_scale.h>
-#include <core/layer_softmax.h>
+#include <core/layer_softmax_loss.h>
 #include <core/solver_sgd.h>
 #include <core/solver_rmsprop.h>
 #include <recurrent/rnn.h>
@@ -243,9 +243,10 @@ class TextgenDataLayer: public LayerData<Dtype> {
     // Set index at the beginning of the dataset
     dataset_train_index_ = dataset_test_index_ = 0;
 
-    // Create 1 output (label)
+    // Create 1 output for the labels
+    // There's no derivative as we don't backpropagate them
     Parent::out_.resize(1);
-    Parent::out_[0] = std::make_shared<Mat<Dtype>>(1, 1, 1, batch_size);
+    Parent::out_[0] = std::make_shared<Mat<Dtype>>(1, 1, 1, batch_size, false);
   }
 
   /*!
@@ -361,6 +362,7 @@ class TextgenModel: public R {
  protected:
   std::shared_ptr<TextgenDataLayer<Dtype>> data_layer_;   // Data layer
   Dtype                                    temperature_;  // Temperature
+  std::shared_ptr<Mat<Dtype>>              prob_;         // Probabilities
 
 
   // Public methods
@@ -430,9 +432,12 @@ class TextgenModel: public R {
 
     // Add a softmax layer
     std::shared_ptr<Mat<Dtype>> label = data_layer_->Output()[0];
-    Parent::out_ = Parent::Add(std::make_shared<LayerSoftMax<Dtype>>(
+    const std::vector<std::shared_ptr<Mat<Dtype>>>& out =
+    Parent::Add(std::make_shared<LayerSoftMaxLoss<Dtype>>(
       "", std::initializer_list<std::shared_ptr<Mat<Dtype>>>{
-      Parent::out_, label}))[0];
+      Parent::out_, label}));
+    Parent::out_ = out[0];
+    prob_        = out[1];
   }
 
   /*!
@@ -521,8 +526,8 @@ class TextgenModel: public R {
         index      = 0;
         Dtype r    = dist(gen);
         Dtype x    = static_cast<Dtype>(0);
-        Dtype* out = Parent::out_->Data();
-        for (uint32_t i = 0; i < Parent::out_->Size(); ++i) {
+        Dtype* out = prob_->Data();
+        for (uint32_t i = 0; i < prob_->Size(); ++i) {
           x += out[i];
           if (x > r) {
             break;
@@ -573,7 +578,7 @@ int main(int argc, char* argv[]) {
   uint32_t batch_size, num_step, print_each, test_each, save_each,
            lr_scale_each, num_predict, embed_size, hs;
   arg.Arg<uint32_t>("-batchsize"   , 100     , &batch_size);
-  arg.Arg<Dtype>   ("-learningrate", 0.001   , &learning_rate);
+  arg.Arg<Dtype>   ("-lr"          , 0.001   , &learning_rate);
   arg.Arg<Dtype>   ("-decayrate"   , 0.999   , &decay_rate);
   arg.Arg<Dtype>   ("-momentum"    , 0.9     , &momentum);
   arg.Arg<Dtype>   ("-reg"         , 0.000001, &reg);

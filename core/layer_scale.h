@@ -53,28 +53,35 @@ class LayerScale: public Layer<Dtype> {
   /*!
    * Constructor.
    *
-   *  \param[in]  name: layer name
-   *  \param[in]  in  : input activations
+   *  \param[in]  name : layer name
+   *  \param[in]  in   : input activations
+   *  \param[in]  param: parameters
    */
   LayerScale(const char*                                     name,
-             const std::vector<std::shared_ptr<Mat<Dtype>>>& in):
+             const std::vector<std::shared_ptr<Mat<Dtype>>>& in,
+             const Param&                                    param):
     Parent(name, in) {
     // Make sure we have 1 input
     Check(Parent::in_.size() == 1, "Layer '%s' must have 1 input",
           Parent::Name());
 
+    bool use_bias;
+    param.Get("use_bias", true, &use_bias);
+
     // Create 2 weights: scale and bias
     // We learn 1 scale and bias per channel per image
-    Parent::weight_.resize(2);
+    Parent::weight_.resize(use_bias ? 2 : 1);
 
     // Create the scale and initialize it to 1
     Parent::weight_[0] = std::make_shared<Mat<Dtype>>(
-      1, 1, Parent::in_[0]->size[2], Parent::in_[0]->size[3]);
+      1, 1, Parent::in_[0]->size[2]);
     Parent::weight_[0]->Set(static_cast<Dtype>(1));
 
     // Create the bias and initialize it to 0
-    Parent::weight_[1] = std::make_shared<Mat<Dtype>>(
-      1, 1, Parent::in_[0]->size[2], Parent::in_[0]->size[3]);
+    if (use_bias) {
+      Parent::weight_[1] = std::make_shared<Mat<Dtype>>(
+        1, 1, Parent::in_[0]->size[2]);
+    }
 
     // Create 1 output, same size as the input
     Parent::out_.resize(1);
@@ -97,7 +104,8 @@ class LayerScale: public Layer<Dtype> {
     Dtype*       out_data   = Parent::out_[0]->Data();
     const Dtype* in_data    = Parent::in_[0]->Data();
     const Dtype* scale_data = Parent::weight_[0]->Data();
-    const Dtype* bias_data  = Parent::weight_[1]->Data();
+    const Dtype* bias_data  = (Parent::weight_.size() > 1) ?
+                              Parent::weight_[1]->Data() : nullptr;
 
     uint32_t data_size   = Parent::out_[0]->size[0] * Parent::out_[0]->size[1];
     uint32_t num_channel = Parent::out_[0]->size[2];
@@ -106,13 +114,12 @@ class LayerScale: public Layer<Dtype> {
     // out = scale * in + bias
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
       for (uint32_t channel = 0; channel < num_channel; ++channel) {
-        // Weight and activation offsets
-        uint32_t offset_weight = batch * num_channel + channel;
-        uint32_t offset_act    = offset_weight * data_size;
+        uint32_t offset = (batch * num_channel + channel) * data_size;
         for (uint32_t i = 0; i < data_size; ++i) {
-          out_data[offset_act + i] =
-            scale_data[offset_weight] * in_data[offset_act + i] +
-            bias_data[offset_weight];
+          out_data[offset + i] = scale_data[channel] * in_data[offset + i];
+          if (bias_data) {
+            out_data[offset + i] += bias_data[channel];
+          }
         }
       }
     }
@@ -131,7 +138,8 @@ class LayerScale: public Layer<Dtype> {
     Dtype*       in_deriv_data    = Parent::in_[0]->DerivData();
     const Dtype* scale_data       = Parent::weight_[0]->Data();
     Dtype*       scale_deriv_data = Parent::weight_[0]->DerivData();
-    Dtype*       bias_deriv_data  = Parent::weight_[1]->DerivData();
+    Dtype*       bias_deriv_data  = (Parent::weight_.size() > 1) ?
+                                    Parent::weight_[1]->DerivData() : nullptr;
 
     uint32_t data_size   = Parent::out_[0]->size[0] * Parent::out_[0]->size[1];
     uint32_t num_channel = Parent::out_[0]->size[2];
@@ -142,14 +150,14 @@ class LayerScale: public Layer<Dtype> {
     // bias_deriv  = out_deriv
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
       for (uint32_t channel = 0; channel < num_channel; ++channel) {
-        // Weight and activation offsets
-        uint32_t offset_weight = batch * num_channel + channel;
-        uint32_t offset_act    = offset_weight * data_size;
+        uint32_t offset = (batch * num_channel + channel) * data_size;
         for (uint32_t i = 0; i < data_size; ++i) {
-          Dtype dv                         = out_deriv_data[offset_act + i];
-          in_deriv_data[offset_act + i]   += dv * scale_data[offset_weight];
-          scale_deriv_data[offset_weight] += dv * in_data[offset_act + i];
-          bias_deriv_data[offset_weight]  += dv;
+          Dtype dv                   = out_deriv_data[offset + i];
+          in_deriv_data[offset + i] += dv * scale_data[channel];
+          scale_deriv_data[channel] += dv * in_data[offset + i];
+          if (bias_deriv_data) {
+            bias_deriv_data[channel] += dv;
+          }
         }
       }
     }

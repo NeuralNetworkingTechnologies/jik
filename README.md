@@ -95,6 +95,16 @@ Make sure you downloaded the data before running the sandbox examples.
 
 Then, from the build directory, you can run the following sandbox examples.
 
+### Scale by
+
+This example will try to learn a scale value.
+
+Training to learn the scale value 3.14:
+```sh
+sandbox/scale_by/scale_by -train -scale 3.14
+```
+
+
 ### MNIST classifier
 
 This example will classify the MNIST dataset (see here:

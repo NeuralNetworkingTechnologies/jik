@@ -23,7 +23,8 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-add_subdirectory(scale_by)
-add_subdirectory(mnist)
-add_subdirectory(cifar10)
-add_subdirectory(textgen)
+project(scale_by)
+file(GLOB_RECURSE CC *.cc)
+add_executable(scale_by ${CC})
+target_link_libraries(scale_by core)
+install(TARGETS scale_by DESTINATION bin)

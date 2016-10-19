@@ -90,8 +90,11 @@ class LayerBatchNorm: public Layer<Dtype> {
       1, 1, Parent::in_[0]->size[2]);
 
     // Temporary matrices for the current mean and standard deviation values
-    mean_cur_    = std::make_shared<Mat<Dtype>>(1, 1, Parent::in_[0]->size[2]);
-    std_dev_cur_ = std::make_shared<Mat<Dtype>>(1, 1, Parent::in_[0]->size[2]);
+    // No derivative needed
+    mean_cur_    = std::make_shared<Mat<Dtype>>(1, 1, Parent::in_[0]->size[2],
+                                                1, false);
+    std_dev_cur_ = std::make_shared<Mat<Dtype>>(1, 1, Parent::in_[0]->size[2],
+                                                1, false);
 
     // Create 1 output, same size as the input
     Parent::out_.resize(1);

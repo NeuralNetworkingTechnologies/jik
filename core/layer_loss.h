@@ -23,8 +23,8 @@
  */
 
 
-#ifndef CORE_LAYER_CLASSIFIER_H_
-#define CORE_LAYER_CLASSIFIER_H_
+#ifndef CORE_LAYER_LOSS_H_
+#define CORE_LAYER_LOSS_H_
 
 
 #include <core/layer.h>
@@ -37,20 +37,15 @@ namespace jik {
 
 
 /*!
- *  \class  LayerClassifier
- *  \brief  Classifier base class
+ *  \class  LayerLoss
+ *  \brief  Loss function base class
  */
 template <typename Dtype>
-class LayerClassifier: public Layer<Dtype> {
+class LayerLoss: public Layer<Dtype> {
   // Public types
  public:
   typedef Dtype         Type;
   typedef Layer<Dtype>  Parent;
-
-
-  // Protected attributes
- protected:
-  Dtype loss_;  // Loss value
 
 
   // Public methods
@@ -61,25 +56,23 @@ class LayerClassifier: public Layer<Dtype> {
    *  \param[in]  name: layer name
    *  \param[in]  in  : input activations
    */
-  LayerClassifier(const char*                                     name,
-                  const std::vector<std::shared_ptr<Mat<Dtype>>>& in):
+  LayerLoss(const char*                                     name,
+            const std::vector<std::shared_ptr<Mat<Dtype>>>& in):
     Parent(name, in) {
     // Make sure we have 2 inputs (input itself and labels)
     Check(Parent::in_.size() == 2, "Layer '%s' must have 2 inputs",
           Parent::Name());
 
-    // Initialize the loss to zero
-    loss_ = static_cast<Dtype>(0);
-
-    // Create 1 output, same size as the inputs
+    // Create 1 output for the loss value (scalar)
+    // There's no derivative as we don't backpropagate it
     Parent::out_.resize(1);
-    Parent::out_[0] = std::make_shared<Mat<Dtype>>(Parent::in_[0]->size);
+    Parent::out_[0] = std::make_shared<Mat<Dtype>>(1, 1, 1, 1, false);
   }
 
   /*!
    * Destructor.
    */
-  virtual ~LayerClassifier() {}
+  virtual ~LayerLoss() {}
 
   /*!
    * Get the loss value.
@@ -87,7 +80,7 @@ class LayerClassifier: public Layer<Dtype> {
    *  \return Loss value
    */
   Dtype Loss() const {
-    return loss_;
+    return Parent::out_[0]->Data()[0];
   }
 };
 
@@ -95,4 +88,4 @@ class LayerClassifier: public Layer<Dtype> {
 }  // namespace jik
 
 
-#endif  // CORE_LAYER_CLASSIFIER_H_
+#endif  // CORE_LAYER_LOSS_H_

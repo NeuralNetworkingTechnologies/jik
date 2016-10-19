@@ -33,7 +33,7 @@
 #include <core/layer_relu.h>
 #include <core/layer_pool_max.h>
 #include <core/layer_inner_product.h>
-#include <core/layer_softmax.h>
+#include <core/layer_softmax_loss.h>
 #include <core/solver_sgd.h>
 #include <core/solver_rmsprop.h>
 
@@ -389,11 +389,12 @@ class MnistDataLayer: public LayerData<Dtype> {
     dataset_train_index_ = dataset_test_index_ = 0;
 
     // Create 2 outputs: images and labels
+    // There's no derivative for the labels as we don't backpropagate them
     Parent::out_.resize(2);
     Parent::out_[0] = std::make_shared<Mat<Dtype>>(
       dataset_.ImageWidth(), dataset_.ImageHeight(),
       dataset_.ImageChannel(), batch_size);
-    Parent::out_[1] = std::make_shared<Mat<Dtype>>(1, 1, 1, batch_size);
+    Parent::out_[1] = std::make_shared<Mat<Dtype>>(1, 1, 1, batch_size, false);
   }
 
   /*!
@@ -424,7 +425,7 @@ class MnistDataLayer: public LayerData<Dtype> {
     }
 
     // We are done if we are at the end of the testing dataset
-    bool testing_done = dataset_test_index_ == dataset_test_size;
+    bool testing_done = dataset_test_index_ >= dataset_test_size;
 
     if (testing_done) {
       // If we are done, we rewind
@@ -522,6 +523,7 @@ class MnistModel: public Model<Dtype> {
   // Protected attributes
  protected:
   std::shared_ptr<Mat<Dtype>> label_;   // Labels
+  std::shared_ptr<Mat<Dtype>> prob_;    // Probabilities
 
 
   // Public methods
@@ -683,7 +685,7 @@ class MnistModel: public Model<Dtype> {
           Parent::out_}, bn_param))[0];
         Parent::out_ = Parent::Add(std::make_shared<LayerScale<Dtype>>(
           "scale1", std::initializer_list<std::shared_ptr<Mat<Dtype>>>{
-          Parent::out_}))[0];
+          Parent::out_}, Param()))[0];
       }
 
       // Increase the depth for the next conv layer
@@ -710,9 +712,12 @@ class MnistModel: public Model<Dtype> {
     }
 
     // Loss (softmax)
-    Parent::out_ = Parent::Add(std::make_shared<LayerSoftMax<Dtype>>("loss",
+    const std::vector<std::shared_ptr<Mat<Dtype>>>& softmax_out =
+    Parent::Add(std::make_shared<LayerSoftMaxLoss<Dtype>>("loss",
       std::initializer_list<std::shared_ptr<Mat<Dtype>>>{Parent::out_,
-      label_}))[0];
+      label_}));
+    Parent::out_ = softmax_out[0];
+    prob_        = softmax_out[1];
   }
 
   /*!
@@ -730,7 +735,7 @@ class MnistModel: public Model<Dtype> {
     State state(State::PHASE_TEST);
 
     // Number of classes (outputs)
-    uint32_t num_output = Parent::out_->size[2];
+    uint32_t num_output = prob_->size[2];
 
     // Get the data layer to keep track of the testing index
     std::shared_ptr<MnistDataLayer<Dtype>> mnist_data =
@@ -756,7 +761,7 @@ class MnistModel: public Model<Dtype> {
       uint32_t pred = 0;
       for (uint32_t batch = 0; batch < actual_batch_size; ++batch) {
         // Outputs
-        const Dtype* data = Parent::out_->Data() + batch * num_output;
+        const Dtype* data = prob_->Data() + batch * num_output;
 
         // Network prediction
         uint32_t predicted_number = 0;
@@ -805,7 +810,7 @@ int main(int argc, char* argv[]) {
   Dtype learning_rate, decay_rate, momentum, reg, clip, lr_scale;
   uint32_t num_step, print_each, test_each, save_each, lr_scale_each;
   arg.Arg<uint32_t>("-batchsize"   , 100     , &batch_size);
-  arg.Arg<Dtype>   ("-learningrate", 0.001   , &learning_rate);
+  arg.Arg<Dtype>   ("-lr"          , 0.001   , &learning_rate);
   arg.Arg<Dtype>   ("-decayrate"   , 0.999   , &decay_rate);
   arg.Arg<Dtype>   ("-momentum"    , 0.9     , &momentum);
   arg.Arg<Dtype>   ("-reg"         , 0.000001, &reg);
@@ -852,7 +857,8 @@ int main(int argc, char* argv[]) {
 
   // Load the model if one is specified
   if (model_path) {
-    model.Load(model_path);
+    size_t size = model.Load(model_path);
+    Report(kInfo, "Loading model '%s' (%ld byte(s))", model_path, size);
   }
 
   // Testing the model only

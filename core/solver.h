@@ -136,7 +136,13 @@ class Solver {
       // Clean
       model->ClearDeriv();
 
-      if ((++print >= print_each_) || (step == num_step - 1)) {
+      if (print_each_ && !step) {
+        Report(kInfo, "Step #%ld LR: %f, Initial loss: %f",
+               step + 1, learning_rate, loss);
+      }
+
+      if (print_each_ && ((++print >= print_each_) ||
+                          (step == num_step - 1))) {
         Report(kInfo, "Step #%ld LR: %f, Loss: %f, Speed: %f steps/sec",
                step + 1, learning_rate, loss, print_each_ /
                (static_cast<double>(std::clock() - start) / CLOCKS_PER_SEC));
@@ -144,24 +150,29 @@ class Solver {
         start = std::clock();
       }
 
-      if ((++test >= test_each_) || (step == num_step - 1)) {
+      if (test_each_ && ((++test >= test_each_) || (step == num_step - 1))) {
         Report(kInfo, "Step #%d Accuracy: %f",
                step + 1, model->Test());
         test = 0;
       }
 
-      if ((++save >= save_each_) || (step == num_step - 1)) {
+      if (save_each_ && ((++save >= save_each_) || (step == num_step - 1))) {
         std::string file_name = model->Name() + std::string("_") +
                                 std::to_string(step + 1) + ".model";
-        if (!model->Save(file_name.c_str())) {
-          return false;
+        size_t size = model->Save(file_name.c_str());
+        if (print_each_ && size) {
+          Report(kInfo, "Saving model '%s' (%ld byte(s))",
+                 file_name.c_str(), size);
         }
         save = 0;
       }
 
-      if (++lr >= lr_scale_each_) {
-        Report(kInfo, "Step #%d Update learning rate from %f to %f (scale %f)",
-               step + 1, learning_rate, learning_rate * lr_scale_, lr_scale_);
+      if (lr_scale_each_ && (++lr >= lr_scale_each_)) {
+        if (print_each_) {
+          Report(kInfo, "Step #%d Update learning rate from %f to %f "
+                 "(scale %f)", step + 1, learning_rate,
+                 learning_rate * lr_scale_, lr_scale_);
+        }
         learning_rate *= lr_scale_;
         lr = 0;
       }

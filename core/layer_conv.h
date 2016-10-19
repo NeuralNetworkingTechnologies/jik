@@ -81,6 +81,8 @@ class LayerConv: public Layer<Dtype> {
           Parent::Name());
 
     // Parameters
+    bool use_bias;
+    param.Get("use_bias"     , true, &use_bias);
     param.Get("num_output"   , &num_output_);
     param.Get("filter_width" , &filter_width_);
     param.Get("filter_height", &filter_height_);
@@ -99,7 +101,7 @@ class LayerConv: public Layer<Dtype> {
     uint32_t num_input = Parent::in_[0]->size[2];
 
     // Create 2 weights: kernel filter and bias
-    Parent::weight_.resize(2);
+    Parent::weight_.resize(use_bias ? 2 : 1);
 
     // Initialize the filter matrix with some random values
     // (gaussian distribution)
@@ -109,7 +111,9 @@ class LayerConv: public Layer<Dtype> {
       (filter_width_ * filter_height_ * num_input)));
 
     // Create the bias and initialize it to 0
-    Parent::weight_[1] = std::make_shared<Mat<Dtype>>(1, 1, num_output_);
+    if (use_bias) {
+      Parent::weight_[1] = std::make_shared<Mat<Dtype>>(1, 1, num_output_);
+    }
 
     // Create 1 output, same size as the input
     Parent::out_.resize(1);
@@ -133,7 +137,8 @@ class LayerConv: public Layer<Dtype> {
     Dtype*       out_data    = Parent::out_[0]->Data();
     const Dtype* in_data     = Parent::in_[0]->Data();
     const Dtype* filter_data = Parent::weight_[0]->Data();
-    const Dtype* bias_data   = Parent::weight_[1]->Data();
+    const Dtype* bias_data   = (Parent::weight_.size() > 1) ?
+                               Parent::weight_[1]->Data() : nullptr;
 
     uint32_t in_width   = Parent::in_[0]->size[0];
     uint32_t in_height  = Parent::in_[0]->size[1];
@@ -177,7 +182,9 @@ class LayerConv: public Layer<Dtype> {
             uint32_t out_index =
               out_offset + (channel * out_height_ + out_y) * out_width_ +
               out_x;
-            val += bias_data[channel];
+            if (bias_data) {
+              val += bias_data[channel];
+            }
             out_data[out_index] = val;
           }
         }
@@ -198,7 +205,8 @@ class LayerConv: public Layer<Dtype> {
     Dtype*       in_deriv_data     = Parent::in_[0]->DerivData();
     const Dtype* filter_data       = Parent::weight_[0]->Data();
     Dtype*       filter_deriv_data = Parent::weight_[0]->DerivData();
-    Dtype*       bias_deriv_data   = Parent::weight_[1]->DerivData();
+    Dtype*       bias_deriv_data   = (Parent::weight_.size() > 1) ?
+                                     Parent::weight_[1]->DerivData() : nullptr;
 
     uint32_t in_width   = Parent::in_[0]->size[0];
     uint32_t in_height  = Parent::in_[0]->size[1];
@@ -244,7 +252,9 @@ class LayerConv: public Layer<Dtype> {
                 }
               }
             }
-            bias_deriv_data[channel] += dv;
+            if (bias_deriv_data) {
+              bias_deriv_data[channel] += dv;
+            }
           }
         }
       }

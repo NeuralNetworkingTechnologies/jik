@@ -52,8 +52,7 @@ class LayerDropout: public Layer<Dtype> {
 
   // Protected attributes
  protected:
-  Dtype                       drop_prob_;   // Probability to drop
-  std::shared_ptr<Mat<Dtype>> mask_;        // Mask
+  Dtype prob_;  // Probability to drop
 
 
   // Public methods
@@ -74,28 +73,24 @@ class LayerDropout: public Layer<Dtype> {
           Parent::Name());
 
     // Probability to drop
-    param.Get("drop_prob", &drop_prob_);
+    param.Get("prob", &prob_);
 
     // Create the mask and initialize it to 0
-    mask_ = std::make_shared<Mat<Dtype>>(Parent::in_[0]->size);
+    Parent::out_[1] = std::make_shared<Mat<Dtype>>(Parent::in_[0]->size);
 
-    // Create 1 output, same size as the input
-    Parent::out_.resize(1);
+    // Create 2 outputs, same size as the input
+    // The first input is the result of the dropout, the second is the mask
+    // There's no derivative for the mask as we don't try to learn it
+    Parent::out_.resize(2);
     Parent::out_[0] = std::make_shared<Mat<Dtype>>(Parent::in_[0]->size);
+    Parent::out_[1] = std::make_shared<Mat<Dtype>>(Parent::in_[0]->size,
+                                                   false);
   }
 
   /*!
    * Destructor.
    */
   virtual ~LayerDropout() {}
-
-  /*!
-   * Clear the derivatives.
-   */
-  virtual void ClearDeriv() {
-    Parent::ClearDeriv();
-    mask_->deriv->Zero();
-  }
 
   /*!
    * Forward pass.
@@ -112,34 +107,34 @@ class LayerDropout: public Layer<Dtype> {
     }
 
     // out = mask * in
-    if (drop_prob_ < std::numeric_limits<Dtype>::epsilon()) {
+    if (prob_ < std::numeric_limits<Dtype>::epsilon()) {
       // Nothing to drop: just copy the input to the output
       Parent::out_[0]->data = Parent::in_[0]->data;
-      mask_->Set(static_cast<Dtype>(1));
-    } else if (drop_prob_ > static_cast<Dtype>(1) -
+      Parent::out_[1]->Set(static_cast<Dtype>(1));
+    } else if (prob_ > static_cast<Dtype>(1) -
                std::numeric_limits<Dtype>::epsilon()) {
       // Drop everything: zero out the data
       Parent::out_[0]->Zero();
-      mask_->Zero();
+      Parent::out_[1]->Zero();
     } else {
       std::random_device rd;
       std::mt19937 gen(rd());
       std::uniform_real_distribution<Dtype> dist(static_cast<Dtype>(0),
                                                  static_cast<Dtype>(1));
 
-      Dtype* mask_data = mask_->Data();
-      Dtype scale      = static_cast<Dtype>(1) /
-                         (static_cast<Dtype>(1) - drop_prob_);
-      for (uint32_t i = 0; i < mask_->Size(); ++i) {
-        if (dist(gen) < drop_prob_) {
+      Dtype* mask_data = Parent::out_[1]->Data();
+      Dtype scale = static_cast<Dtype>(1) /
+                    (static_cast<Dtype>(1) - prob_);
+      for (uint32_t i = 0; i < Parent::out_[1]->Size(); ++i) {
+        if (dist(gen) < prob_) {
           mask_data[i] = static_cast<Dtype>(0);
         } else {
           mask_data[i] = scale;
         }
       }
 
-      Dtype*       out_data  = Parent::out_[0]->Data();
-      const Dtype* in_data   = Parent::in_[0]->Data();
+      Dtype*       out_data = Parent::out_[0]->Data();
+      const Dtype* in_data  = Parent::in_[0]->Data();
       for (uint32_t i = 0; i < Parent::out_[0]->Size(); ++i) {
         out_data[i] = mask_data[i] * in_data[i];
       }
@@ -154,18 +149,13 @@ class LayerDropout: public Layer<Dtype> {
    *  \param[in]  state: state
    */
   virtual void Backward(const State& state) {
-    const Dtype* out_deriv_data  = Parent::out_[0]->DerivData();
-    const Dtype* in_data         = Parent::in_[0]->Data();
-    const Dtype* mask_data       = mask_->Data();
-    Dtype*       in_deriv_data   = Parent::in_[0]->DerivData();
-    Dtype*       mask_deriv_data = mask_->DerivData();
+    const Dtype* out_deriv_data = Parent::out_[0]->DerivData();
+    const Dtype* mask_data      = Parent::out_[1]->Data();
+    Dtype*       in_deriv_data  = Parent::in_[0]->DerivData();
 
-    // in_deriv   = mask * out_deriv
-    // mask_deriv = in * out_deriv
+    // in_deriv = mask * out_deriv
     for (uint32_t i = 0; i < Parent::out_[0]->Size(); ++i) {
-      Dtype dv            = out_deriv_data[i];
-      in_deriv_data[i]   += mask_data[i] * dv;
-      mask_deriv_data[i] += in_data[i]   * dv;
+      in_deriv_data[i] += mask_data[i] * out_deriv_data[i];
     }
   }
 };

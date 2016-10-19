@@ -30,7 +30,7 @@
 #include <core/log.h>
 #include <core/layer.h>
 #include <core/layer_data.h>
-#include <core/layer_classifier.h>
+#include <core/layer_loss.h>
 #include <cstdio>
 #include <memory>
 #include <vector>
@@ -194,27 +194,26 @@ class Model {
    *
    *  \param[in]  file_path: path to the file
    *
-   *  \return     Error?
+   *  \return     Data size read from the file
    */
-  bool Load(const char* file_path) const {
+  size_t Load(const char* file_path) const {
     if (!file_path || !*file_path) {
       Report(kError, "Invalid file name");
-      return false;
+      return 0;
     }
     std::FILE* fp = std::fopen(file_path, "r");
     if (!fp) {
       Report(kError, "Can't open file '%s' for read", file_path);
-      return false;
+      return 0;
     }
     size_t size = Read(fp);
     std::fclose(fp);
     if (!size) {
       // Nothing to write
       std::remove(file_path);
-      return true;
+      return 0;
     }
-    Report(kInfo, "Loading model '%s' (%ld byte(s))", file_path, size);
-    return true;
+    return size;
   }
 
   /*!
@@ -222,27 +221,26 @@ class Model {
    *
    *  \param[in]  file_path: path to the file
    *
-   *  \return     Error?
+   *  \return     Data size written to the file
    */
-  bool Save(const char* file_path) const {
+  size_t Save(const char* file_path) const {
     if (!file_path || !*file_path) {
       Report(kError, "Invalid file name");
-      return false;
+      return 0;
     }
     std::FILE* fp = std::fopen(file_path, "wb");
     if (!fp) {
       Report(kError, "Can't open file '%s' for write", file_path);
-      return false;
+      return 0;
     }
     size_t size = Write(fp);
     std::fclose(fp);
     if (!size) {
       // Nothing to write
       std::remove(file_path);
-      return true;
+      return 0;
     }
-    Report(kInfo, "Saving model '%s' (%ld byte(s))", file_path, size);
-    return true;
+    return size;
   }
 
   /*!
@@ -289,7 +287,7 @@ class Model {
   /*!
    * Clear the derivatives.
    */
-  virtual void ClearDeriv() {
+  void ClearDeriv() {
     for (size_t i = 0; i < layer_.size(); ++i) {
       layer_[i]->ClearDeriv();
     }
@@ -334,19 +332,20 @@ class Model {
   }
 
   /*!
-   * Get the classifier layer.
+   * Get the loss layer.
    *
-   *  \return Classifier layer
+   *  \return Loss layer
    */
-  std::shared_ptr<LayerClassifier<Dtype>> ClassifierLayer() const {
+  template <class Ltype = LayerLoss<Dtype>>
+  std::shared_ptr<Ltype> LossLayer() const {
     // Get the last layer of the graph
-    // It should be a classifier layer
-    std::shared_ptr<LayerClassifier<Dtype>> classifier;
+    // It should be a loss layer
+    std::shared_ptr<Ltype> loss_layer;
     if (layer_.size()) {
-      classifier = std::dynamic_pointer_cast<LayerClassifier<Dtype>>(
+      loss_layer = std::dynamic_pointer_cast<Ltype>(
         layer_[layer_.size() - 1]);
     }
-    return classifier;
+    return loss_layer;
   }
 
   /*!
@@ -355,13 +354,12 @@ class Model {
    *  \return Loss value
    */
   Dtype Loss() const {
-    // Get the classifier and ask for the loss value
-    const std::shared_ptr<LayerClassifier<Dtype>>& classifier =
-      ClassifierLayer();
-    if (!classifier) {
+    // Get the loss layer and ask for the loss value
+    const std::shared_ptr<LayerLoss<Dtype>>& loss_layer = LossLayer();
+    if (!loss_layer) {
       return static_cast<Dtype>(0);
     }
-    return classifier->Loss();
+    return loss_layer->Loss();
   }
 
   /*!

@@ -23,11 +23,11 @@
  */
 
 
-#ifndef CORE_LAYER_SOFTMAX_H_
-#define CORE_LAYER_SOFTMAX_H_
+#ifndef CORE_LAYER_SOFTMAX_LOSS_H_
+#define CORE_LAYER_SOFTMAX_LOSS_H_
 
 
-#include <core/layer_classifier.h>
+#include <core/layer_loss.h>
 #include <memory>
 #include <cmath>
 #include <vector>
@@ -37,15 +37,15 @@ namespace jik {
 
 
 /*!
- *  \class  LayerSoftMax
- *  \brief  Softmax
+ *  \class  LayerSoftMaxLoss
+ *  \brief  Softmax + multinomial logistic loss function
  */
 template <typename Dtype>
-class LayerSoftMax: public LayerClassifier<Dtype> {
+class LayerSoftMaxLoss: public LayerLoss<Dtype> {
   // Public types
  public:
-  typedef Dtype                   Type;
-  typedef LayerClassifier<Dtype>  Parent;
+  typedef Dtype             Type;
+  typedef LayerLoss<Dtype>  Parent;
 
 
   // Public methods
@@ -56,8 +56,8 @@ class LayerSoftMax: public LayerClassifier<Dtype> {
    *  \param[in]  name: layer name
    *  \param[in]  in  : input activations
    */
-  LayerSoftMax(const char*                                     name,
-               const std::vector<std::shared_ptr<Mat<Dtype>>>& in):
+  LayerSoftMaxLoss(const char*                                     name,
+                   const std::vector<std::shared_ptr<Mat<Dtype>>>& in):
     Parent(name, in) {
       Check(Parent::in_[0]->size[3] == Parent::in_[1]->size[3],
             "Layer '%s' inputs must have the same batch size", Parent::Name());
@@ -65,12 +65,19 @@ class LayerSoftMax: public LayerClassifier<Dtype> {
             Parent::in_[1]->size[1] == 1 &&
             Parent::in_[1]->size[2] == 1,
             "Layer '%s' labels input must have a size 1x1x1xBatchSize");
+
+    // Create 1 more output, same size as the inputs
+    // to save the results of the softmax (probabilities)
+    // There's no derivative as we don't backpropagate it
+    Parent::out_.resize(2);
+    Parent::out_[1] = std::make_shared<Mat<Dtype>>(Parent::in_[0]->size,
+                                                   false);
   }
 
   /*!
    * Destructor.
    */
-  virtual ~LayerSoftMax() {}
+  virtual ~LayerSoftMaxLoss() {}
 
   /*!
    * Forward pass.
@@ -80,15 +87,17 @@ class LayerSoftMax: public LayerClassifier<Dtype> {
    *  \param[in]  state: state
    */
   virtual void Forward(const State& state) {
-    Dtype*       out_data = Parent::out_[0]->Data();
-    const Dtype* in_data  = Parent::in_[0]->Data();
+    Dtype*       loss_data  = Parent::out_[0]->Data();
+    Dtype*       out_data   = Parent::out_[1]->Data();
+    const Dtype* in_data    = Parent::in_[0]->Data();
+    const Dtype* label_data = Parent::in_[1]->Data();
 
-    uint32_t data_size = Parent::out_[0]->size[0] * Parent::out_[0]->size[1] *
-                         Parent::out_[0]->size[2];
+    uint32_t data_size = Parent::out_[1]->size[0] * Parent::out_[1]->size[1] *
+                         Parent::out_[1]->size[2];
     if (!data_size) {
       return;
     }
-    uint32_t batch_size = Parent::out_[0]->size[3];
+    uint32_t batch_size = Parent::out_[1]->size[3];
 
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
       // Find the max value for the current data
@@ -111,6 +120,14 @@ class LayerSoftMax: public LayerClassifier<Dtype> {
         out_data[offset + i] *= sum;
       }
     }
+
+    loss_data[0] = static_cast<Dtype>(0);
+    for (uint32_t batch = 0; batch < batch_size; ++batch) {
+      uint32_t index = batch * data_size +
+                       static_cast<uint32_t>(label_data[batch]);
+      loss_data[0] -= std::log(out_data[index]);
+    }
+    loss_data[0] /= batch_size;
   }
 
   /*!
@@ -121,21 +138,18 @@ class LayerSoftMax: public LayerClassifier<Dtype> {
    *  \param[in]  state: state
    */
   virtual void Backward(const State& state) {
-    const Dtype* out_data      = Parent::out_[0]->Data();
     Dtype*       in_deriv_data = Parent::in_[0]->DerivData();
     const Dtype* label_data    = Parent::in_[1]->Data();
 
-    uint32_t data_size  = Parent::out_[0]->size[0] * Parent::out_[0]->size[1] *
-                          Parent::out_[0]->size[2];
-    uint32_t batch_size = Parent::out_[0]->size[3];
+    uint32_t data_size  = Parent::out_[1]->size[0] * Parent::out_[1]->size[1] *
+                          Parent::out_[1]->size[2];
+    uint32_t batch_size = Parent::out_[1]->size[3];
 
-    Parent::in_[0]->deriv->data = Parent::out_[0]->data;
-    Parent::loss_               = static_cast<Dtype>(0);
+    Parent::in_[0]->deriv->data = Parent::out_[1]->data;
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
       uint32_t index = batch * data_size +
                        static_cast<uint32_t>(label_data[batch]);
       in_deriv_data[index] -= static_cast<Dtype>(1);
-      Parent::loss_        -= std::log(out_data[index]);
     }
   }
 };
@@ -144,4 +158,4 @@ class LayerSoftMax: public LayerClassifier<Dtype> {
 }  // namespace jik
 
 
-#endif  // CORE_LAYER_SOFTMAX_H_
+#endif  // CORE_LAYER_SOFTMAX_LOSS_H_
