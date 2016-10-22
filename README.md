@@ -98,8 +98,8 @@ Then, from the build directory, you can run the following sandbox examples.
 ### Linear regression
 
 This example will try to learn a scale value using linear regression.
-This example will generate a lot of value X and an equal amount of values Y so
-that Y = (N + eps) * X.
+We will generate some values X and an equal amount of values Y so that:
+Y = (N + eps) * X.
 The model (made of 1 scale layer) will try to learn the value of N. 
 
 Training the scale model to learn value 3.14:
