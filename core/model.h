@@ -152,7 +152,7 @@ class Model {
         res += std::fread(reinterpret_cast<void*>(&weight_size), 1,
                           sizeof(uint32_t), fp);
         // Check the number of weights in the file is matching
-        if (static_cast<uint32_t>(w->Size()) != weight_size) {
+        if (w->Size() != weight_size) {
           Report(kError, "Weights from file is not matching current model");
           return res;
         }
@@ -178,7 +178,7 @@ class Model {
       layer_[i]->GetWeight(&weight);
       for (const std::shared_ptr<Mat<Dtype>>& w : weight) {
         // Write the number of weights
-        uint32_t weight_size = static_cast<uint32_t>(w->Size());
+        uint32_t weight_size = w->Size();
         res += std::fwrite(reinterpret_cast<void*>(&weight_size), 1,
                            sizeof(uint32_t), fp);
         // Write the weights
@@ -357,7 +357,7 @@ class Model {
     // Get the loss layer and ask for the loss value
     const std::shared_ptr<LayerLoss<Dtype>>& loss_layer = LossLayer();
     if (!loss_layer) {
-      return static_cast<Dtype>(0);
+      return Dtype(0);
     }
     return loss_layer->Loss();
   }

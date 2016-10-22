@@ -107,7 +107,7 @@ class LayerMult: public Layer<Dtype> {
         for (uint32_t i = 0, ia = 0, ic = 0; i < m; ++i, ia += k, ic += n) {
           for (uint32_t j = 0, jb = 0, jc = 0; j < n; ++j, ++jb, ++jc) {
             uint32_t index  = out_offset + jc + ic;
-            out_data[index] = static_cast<Dtype>(0);
+            out_data[index] = Dtype(0);
             for (uint32_t l = 0, la = 0, lb = 0; l < k; ++l, ++la, lb += n) {
               out_data[index] += in1_data[in1_offset + la + ia] *
                                  in2_data[in2_offset + lb + jb];

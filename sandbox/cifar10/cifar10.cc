@@ -165,9 +165,9 @@ class Cifar10Dataset: public Dataset {
       img.image.resize(image_size);
       uint32_t buffer_index = 0;
       for (size_t j = 0; j < image_size; ++j) {
-        img.image[j] = static_cast<Dtype>(0);
+        img.image[j] = Dtype(0);
         for (size_t k = 0; k < num_channel_diff; ++k) {
-          img.image[j] += static_cast<Dtype>(buffer[buffer_index++]);
+          img.image[j] += Dtype(buffer[buffer_index++]);
         }
         img.image[j] /= num_channel_diff * 0xFF;
       }
@@ -374,7 +374,7 @@ class Cifar10DataLayer: public LayerData<Dtype> {
    *  \return Testing done?
    */
   bool TestingDone() {
-    uint32_t dataset_test_size = static_cast<uint32_t>(dataset_.Test().size());
+    uint32_t dataset_test_size = uint32_t(dataset_.Test().size());
     if (!dataset_test_size) {
       // No dataset: we are done
       return true;
@@ -415,7 +415,7 @@ class Cifar10DataLayer: public LayerData<Dtype> {
       return;
     }
 
-    if (*dataset_index >= static_cast<uint32_t>(dataset->size())) {
+    if (*dataset_index >= uint32_t(dataset->size())) {
       Report(kError, "Invalid dataset index");
       Parent::out_[0]->Zero();
       Parent::out_[1]->Zero();
@@ -444,13 +444,13 @@ class Cifar10DataLayer: public LayerData<Dtype> {
       label_data[batch] = image.label;
 
       // Go to the next image
-      if (++*dataset_index >= static_cast<uint32_t>(dataset->size())) {
+      if (++*dataset_index >= uint32_t(dataset->size())) {
         if (state.phase == State::PHASE_TRAIN) {
           // Rewind
           *dataset_index = 0;
         } else {
           // Clamp
-          *dataset_index = static_cast<uint32_t>(dataset->size()) - 1;
+          *dataset_index = uint32_t(dataset->size()) - 1;
           testing_done   = true;
         }
       }
@@ -458,7 +458,7 @@ class Cifar10DataLayer: public LayerData<Dtype> {
 
     if (testing_done) {
       // Mark the testing dataset as done
-      *dataset_index = static_cast<uint32_t>(dataset->size());
+      *dataset_index = uint32_t(dataset->size());
     }
   }
 };
@@ -678,11 +678,11 @@ class Cifar10Model: public Model<Dtype> {
       std::dynamic_pointer_cast<Cifar10DataLayer<Dtype>>(Parent::DataLayer());
     if (!cifar10_data) {
       Report(kError, "No data layer found in model '%s'", Parent::Name());
-      return static_cast<Dtype>(0);
+      return Dtype(0);
     }
 
     uint32_t step = 0;
-    Dtype acc     = static_cast<Dtype>(0);
+    Dtype acc     = Dtype(0);
     while (!cifar10_data->TestingDone()) {
       // Current test index
       uint32_t index = cifar10_data->TestIndex();
@@ -708,14 +708,14 @@ class Cifar10Model: public Model<Dtype> {
         }
 
         // Check if the prediction is correct
-        if (static_cast<uint32_t>(label_->Data()[batch]) == predicted_number) {
+        if (uint32_t(label_->Data()[batch]) == predicted_number) {
           ++pred;
         }
       }
 
       // Go to next step and accumulate the accuracy
       ++step;
-      acc += static_cast<Dtype>(pred) / actual_batch_size;
+      acc += Dtype(pred) / actual_batch_size;
     }
 
     // Overall accuracy
@@ -745,18 +745,18 @@ int main(int argc, char* argv[]) {
   uint32_t batch_size;
   Dtype learning_rate, decay_rate, momentum, reg, clip, lr_scale;
   uint32_t num_step, print_each, test_each, save_each, lr_scale_each;
-  arg.Arg<uint32_t>("-batchsize"   , 100     , &batch_size);
-  arg.Arg<Dtype>   ("-lr"          , 0.0005  , &learning_rate);
-  arg.Arg<Dtype>   ("-decayrate"   , 0.999   , &decay_rate);
-  arg.Arg<Dtype>   ("-momentum"    , 0.9     , &momentum);
-  arg.Arg<Dtype>   ("-reg"         , 0.000001, &reg);
-  arg.Arg<Dtype>   ("-clip"        , 5.0     , &clip);
-  arg.Arg<uint32_t>("-numstep"     , 50000   , &num_step);
-  arg.Arg<uint32_t>("-printeach"   , 100     , &print_each);
-  arg.Arg<uint32_t>("-testeach"    , 500     , &test_each);
-  arg.Arg<uint32_t>("-saveeach"    , 500     , &save_each);
-  arg.Arg<uint32_t>("-lrscaleeach" , 10000   , &lr_scale_each);
-  arg.Arg<Dtype>   ("-lrscale"     , 0.1     , &lr_scale);
+  arg.Arg<uint32_t>("-batchsize"  , 100            , &batch_size);
+  arg.Arg<Dtype>   ("-lr"         , Dtype(0.0005)  , &learning_rate);
+  arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999)   , &decay_rate);
+  arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)     , &momentum);
+  arg.Arg<Dtype>   ("-reg"        , Dtype(0.000001), &reg);
+  arg.Arg<Dtype>   ("-clip"       , Dtype(5)       , &clip);
+  arg.Arg<uint32_t>("-numstep"    , 50000          , &num_step);
+  arg.Arg<uint32_t>("-printeach"  , 100            , &print_each);
+  arg.Arg<uint32_t>("-testeach"   , 500            , &test_each);
+  arg.Arg<uint32_t>("-saveeach"   , 500            , &save_each);
+  arg.Arg<uint32_t>("-lrscaleeach", 10000          , &lr_scale_each);
+  arg.Arg<Dtype>   ("-lrscale"    , Dtype(0.1)     , &lr_scale);
 
   if (!dataset_path || (!train && !model_path) || arg.ArgExists("-h")) {
     Report(kInfo, "Usage: %s -dataset <path/to/cifar10/dataset> [-train] "

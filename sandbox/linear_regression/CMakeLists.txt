@@ -23,8 +23,8 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-project(scale_by)
+project(linear_regression)
 file(GLOB_RECURSE CC *.cc)
-add_executable(scale_by ${CC})
-target_link_libraries(scale_by core)
-install(TARGETS scale_by DESTINATION bin)
+add_executable(linear_regression ${CC})
+target_link_libraries(linear_regression core)
+install(TARGETS linear_regression DESTINATION bin)

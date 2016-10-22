@@ -87,8 +87,7 @@ class LayerSigmoid: public Layer<Dtype> {
 
     // out = 1 / (1 + exp(-in))
     for (uint32_t i = 0; i < Parent::out_[0]->Size(); ++i) {
-      out_data[i] = static_cast<Dtype>(1) /
-                    (static_cast<Dtype>(1) + std::exp(-in_data[i]));
+      out_data[i] = Dtype(1) / (Dtype(1) + std::exp(-in_data[i]));
     }
   }
 
@@ -107,8 +106,7 @@ class LayerSigmoid: public Layer<Dtype> {
     // in_deriv = out * (1 - out) * out_deriv
     for (uint32_t i = 0; i < Parent::out_[0]->Size(); ++i) {
       Dtype val         = out_data[i];
-      in_deriv_data[i] += val * (static_cast<Dtype>(1) - val) *
-                          out_deriv_data[i];
+      in_deriv_data[i] += val * (Dtype(1) - val) * out_deriv_data[i];
     }
   }
 };

@@ -23,7 +23,7 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-add_subdirectory(scale_by)
+add_subdirectory(linear_regression)
 add_subdirectory(mnist)
 add_subdirectory(cifar10)
 add_subdirectory(textgen)

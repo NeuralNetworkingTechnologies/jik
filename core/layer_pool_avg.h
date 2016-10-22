@@ -95,16 +95,16 @@ class LayerPoolAvg: public LayerPool<Dtype> {
           int32_t start_y = -Parent::padding_y_;
           for (uint32_t out_y = 0; out_y < Parent::out_height_;
             start_y += Parent::stride_y_, ++out_y) {
-            Dtype val      = static_cast<Dtype>(0);
+            Dtype val      = Dtype(0);
             uint32_t count = 0;
             for (uint32_t x = 0; x < Parent::filter_width_; ++x) {
               int32_t in_x = start_x + x;
-              if (in_x < 0 || static_cast<uint32_t>(in_x) >= in_width) {
+              if (in_x < 0 || uint32_t(in_x) >= in_width) {
                 continue;
               }
               for (uint32_t y = 0; y < Parent::filter_height_; ++y) {
                 int32_t in_y = start_y + y;
-                if (in_y < 0 || static_cast<uint32_t>(in_y) >= in_height) {
+                if (in_y < 0 || uint32_t(in_y) >= in_height) {
                   continue;
                 }
                 uint32_t in_index =
@@ -156,12 +156,12 @@ class LayerPoolAvg: public LayerPool<Dtype> {
               Parent::out_width_ + out_x;
             for (uint32_t x = 0; x < Parent::filter_width_; ++x) {
               int32_t in_x = start_x + x;
-              if (in_x < 0 || static_cast<uint32_t>(in_x) >= in_width) {
+              if (in_x < 0 || uint32_t(in_x) >= in_width) {
                 continue;
               }
               for (uint32_t y = 0; y < Parent::filter_height_; ++y) {
                 int32_t in_y = start_y + y;
-                if (in_y < 0 || static_cast<uint32_t>(in_y) >= in_height) {
+                if (in_y < 0 || uint32_t(in_y) >= in_height) {
                   continue;
                 }
                 uint32_t in_index =

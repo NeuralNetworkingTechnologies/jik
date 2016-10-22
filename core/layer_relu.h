@@ -88,7 +88,7 @@ class LayerRelu: public Layer<Dtype> {
     // RELU activation is thresholded at zero
     // out = in if in > 0, 0 otherwise
     for (uint32_t i = 0; i < Parent::out_[0]->Size(); ++i) {
-      out_data[i] = std::max(static_cast<Dtype>(0), in_data[i]);
+      out_data[i] = std::max(Dtype(0), in_data[i]);
     }
   }
 
@@ -106,7 +106,7 @@ class LayerRelu: public Layer<Dtype> {
 
     // in_deriv = out_deriv if out > 0, 0 otherwise
     for (uint32_t i = 0; i < Parent::out_[0]->Size(); ++i) {
-      if (out_data[i] > static_cast<Dtype>(0)) {
+      if (out_data[i] > Dtype(0)) {
         in_deriv_data[i] += out_deriv_data[i];
       }
     }

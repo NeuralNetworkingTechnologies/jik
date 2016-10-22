@@ -140,7 +140,7 @@ class TextgenDataset: public Dataset {
    *  \return Number of sentences
    */
   uint32_t SentenceSize() const {
-    return static_cast<uint32_t>(sentence_.size());
+    return uint32_t(sentence_.size());
   }
 
   /*!
@@ -149,7 +149,7 @@ class TextgenDataset: public Dataset {
    *  \return Number of letters
    */
   uint32_t VocabSize() const {
-    return static_cast<uint32_t>(vocab_.size());
+    return uint32_t(vocab_.size());
   }
 
   /*!
@@ -421,7 +421,7 @@ class TextgenModel: public R {
 
     // Add a scale (temperature) layer
     if (temperature_ > std::numeric_limits<Dtype>::epsilon() &&
-        temperature_ < static_cast<Dtype>(1) -
+        temperature_ < Dtype(1) -
         std::numeric_limits<Dtype>::epsilon()) {
       Param param;
       param.Add("scale", temperature_);
@@ -461,10 +461,10 @@ class TextgenModel: public R {
 
     uint32_t len = sentence.length();
     if (!len) {
-      return static_cast<Dtype>(0);
+      return Dtype(0);
     }
 
-    Dtype loss = static_cast<Dtype>(0);
+    Dtype loss = Dtype(0);
     for (uint32_t i = 0; i <= len; ++i) {
       uint32_t index_src = 0;
       uint32_t index_dst = 0;
@@ -502,8 +502,7 @@ class TextgenModel: public R {
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<Dtype> dist(static_cast<Dtype>(0),
-                                               static_cast<Dtype>(1));
+    std::uniform_real_distribution<Dtype> dist(Dtype(0), Dtype(1));
 
     while (!data_layer_->TestingDone()) {
       // Load the data
@@ -525,7 +524,7 @@ class TextgenModel: public R {
         // Pseudo-randomly choose an index
         index      = 0;
         Dtype r    = dist(gen);
-        Dtype x    = static_cast<Dtype>(0);
+        Dtype x    = Dtype(0);
         Dtype* out = prob_->Data();
         for (uint32_t i = 0; i < prob_->Size(); ++i) {
           x += out[i];
@@ -553,7 +552,7 @@ class TextgenModel: public R {
              data_layer_->PredictionIndex(), sentence.c_str());
     }
 
-    return static_cast<Dtype>(1);
+    return Dtype(1);
   }
 };
 
@@ -577,23 +576,23 @@ int main(int argc, char* argv[]) {
         clip, lr_scale, temperature, range;
   uint32_t batch_size, num_step, print_each, test_each, save_each,
            lr_scale_each, num_predict, embed_size, hs;
-  arg.Arg<uint32_t>("-batchsize"   , 100     , &batch_size);
-  arg.Arg<Dtype>   ("-lr"          , 0.001   , &learning_rate);
-  arg.Arg<Dtype>   ("-decayrate"   , 0.999   , &decay_rate);
-  arg.Arg<Dtype>   ("-momentum"    , 0.9     , &momentum);
-  arg.Arg<Dtype>   ("-reg"         , 0.000001, &reg);
-  arg.Arg<Dtype>   ("-clip"        , 5.0     , &clip);
-  arg.Arg<uint32_t>("-numstep"     , 50000   , &num_step);
-  arg.Arg<uint32_t>("-printeach"   , 100     , &print_each);
-  arg.Arg<uint32_t>("-testeach"    , 500     , &test_each);
-  arg.Arg<uint32_t>("-saveeach"    , 500     , &save_each);
-  arg.Arg<uint32_t>("-lrscaleeach" , 10000   , &lr_scale_each);
-  arg.Arg<Dtype>   ("-lrscale"     , 0.1     , &lr_scale);
-  arg.Arg<Dtype>   ("-temperature" , 1.0     , &temperature);
-  arg.Arg<uint32_t>("-numpredict"  , 10      , &num_predict);
-  arg.Arg<uint32_t>("-embedsize"   , 5       , &embed_size);
-  arg.Arg<uint32_t>("-hs"          , 20      , &hs);
-  arg.Arg<Dtype>   ("-range"       , 0.2     , &range);
+  arg.Arg<uint32_t>("-batchsize"  , 100            , &batch_size);
+  arg.Arg<Dtype>   ("-lr"         , Dtype(0.001)   , &learning_rate);
+  arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999)   , &decay_rate);
+  arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)     , &momentum);
+  arg.Arg<Dtype>   ("-reg"        , Dtype(0.000001), &reg);
+  arg.Arg<Dtype>   ("-clip"       , Dtype(5)       , &clip);
+  arg.Arg<uint32_t>("-numstep"    , 50000          , &num_step);
+  arg.Arg<uint32_t>("-printeach"  , 100            , &print_each);
+  arg.Arg<uint32_t>("-testeach"   , 500            , &test_each);
+  arg.Arg<uint32_t>("-saveeach"   , 500            , &save_each);
+  arg.Arg<uint32_t>("-lrscaleeach", 10000          , &lr_scale_each);
+  arg.Arg<Dtype>   ("-lrscale"    , Dtype(0.1)     , &lr_scale);
+  arg.Arg<Dtype>   ("-temperature", Dtype(1)       , &temperature);
+  arg.Arg<uint32_t>("-numpredict" , 10             , &num_predict);
+  arg.Arg<uint32_t>("-embedsize"  , 5              , &embed_size);
+  arg.Arg<uint32_t>("-hs"         , 20             , &hs);
+  arg.Arg<Dtype>   ("-range"      , Dtype(0.2)     , &range);
 
   if (!dataset_path || arg.ArgExists("-h")) {
     Report(kInfo, "Usage: %s -dataset <path/to/text/file> "

@@ -110,24 +110,21 @@ class LayerDropout: public Layer<Dtype> {
     if (prob_ < std::numeric_limits<Dtype>::epsilon()) {
       // Nothing to drop: just copy the input to the output
       Parent::out_[0]->data = Parent::in_[0]->data;
-      Parent::out_[1]->Set(static_cast<Dtype>(1));
-    } else if (prob_ > static_cast<Dtype>(1) -
-               std::numeric_limits<Dtype>::epsilon()) {
+      Parent::out_[1]->Set(Dtype(1));
+    } else if (prob_ > Dtype(1) - std::numeric_limits<Dtype>::epsilon()) {
       // Drop everything: zero out the data
       Parent::out_[0]->Zero();
       Parent::out_[1]->Zero();
     } else {
       std::random_device rd;
       std::mt19937 gen(rd());
-      std::uniform_real_distribution<Dtype> dist(static_cast<Dtype>(0),
-                                                 static_cast<Dtype>(1));
+      std::uniform_real_distribution<Dtype> dist(Dtype(0), Dtype(1));
 
       Dtype* mask_data = Parent::out_[1]->Data();
-      Dtype scale = static_cast<Dtype>(1) /
-                    (static_cast<Dtype>(1) - prob_);
+      Dtype scale = Dtype(1) / (Dtype(1) - prob_);
       for (uint32_t i = 0; i < Parent::out_[1]->Size(); ++i) {
         if (dist(gen) < prob_) {
-          mask_data[i] = static_cast<Dtype>(0);
+          mask_data[i] = Dtype(0);
         } else {
           mask_data[i] = scale;
         }

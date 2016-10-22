@@ -38,11 +38,11 @@ namespace jik {
 
 
 /*!
- *  \class  ScaleByDataLayer
- *  \brief  ScaleBy data layer
+ *  \class  LinearRegressionDataLayer
+ *  \brief  Linear regression data layer
  */
 template <typename Dtype>
-class ScaleByDataLayer: public LayerData<Dtype> {
+class LinearRegressionDataLayer: public LayerData<Dtype> {
   // Public types
  public:
   typedef Dtype             Type;
@@ -68,7 +68,7 @@ class ScaleByDataLayer: public LayerData<Dtype> {
    *  \param[in]  name : layer name
    *  \param[in]  param: parameters
    */
-  ScaleByDataLayer(const char* name, const Param& param):
+  LinearRegressionDataLayer(const char* name, const Param& param):
     LayerData<Dtype>(name) {
     // Parameters
     std::string dataset_path;
@@ -98,7 +98,7 @@ class ScaleByDataLayer: public LayerData<Dtype> {
   /*!
    * Destructor.
    */
-  virtual ~ScaleByDataLayer() {}
+  virtual ~LinearRegressionDataLayer() {}
 
   /*!
    * Get the test index.
@@ -175,10 +175,17 @@ class ScaleByDataLayer: public LayerData<Dtype> {
         seed += dataset_train_size_;
       }
       gen.seed(seed);
+      // Source value
       output_data[batch] = dist(gen);
-      label_data[batch]  = scale_ * output_data[batch];
+      // Target value: (N + eps) * input
+      // We will try to find N through linear regression
+      // We add a small epsilon to the scale to make sure the output is not a
+      // linear combination of the input to complexify a bit the problem
+      label_data[batch] =
+        (scale_ + Dtype(0.001) * (Dtype(2) * dist(gen) - Dtype(1))) *
+        output_data[batch];
 
-      // Go to the next image
+      // Go to the next value
       if (++*dataset_index >= *dataset_size) {
         if (state.phase == State::PHASE_TRAIN) {
           // Rewind
@@ -200,11 +207,11 @@ class ScaleByDataLayer: public LayerData<Dtype> {
 
 
 /*!
- *  \class  ScaleByModel
- *  \brief  ScaleBy model
+ *  \class  LinearRegressionModel
+ *  \brief  LinearRegression model
  */
 template <typename Dtype>
-class ScaleByModel: public Model<Dtype> {
+class LinearRegressionModel: public Model<Dtype> {
   // Public types
  public:
   typedef Dtype         Type;
@@ -229,8 +236,9 @@ class ScaleByModel: public Model<Dtype> {
    *  \param[in]  use_fc      : use fully-connected network?
    *  \param[in]  use_bn      : use batch norm?
    */
-  ScaleByModel(const char* name, uint32_t batch_size, Dtype scale,
-               Dtype min, Dtype max, Dtype size_train, Dtype size_test):
+  LinearRegressionModel(const char* name, uint32_t batch_size, Dtype scale,
+                        Dtype min, Dtype max, Dtype size_train,
+                        Dtype size_test):
     Model<Dtype>(name) {
     // Save the scale
     scale_ = scale;
@@ -246,7 +254,7 @@ class ScaleByModel: public Model<Dtype> {
 
     // Input layer
     std::vector<std::shared_ptr<Mat<Dtype>>> out = Parent::Add(
-      std::make_shared<ScaleByDataLayer<Dtype>>("data1", data_param));
+      std::make_shared<LinearRegressionDataLayer<Dtype>>("data1", data_param));
 
     // Model input (images) and labels
     Parent::in_ = out[0];
@@ -274,7 +282,7 @@ class ScaleByModel: public Model<Dtype> {
   /*!
    * Destructor.
    */
-  virtual ~ScaleByModel() {}
+  virtual ~LinearRegressionModel() {}
 
   /*!
    * Get the learnt scale.
@@ -288,7 +296,7 @@ class ScaleByModel: public Model<Dtype> {
       Report(kError, "There should be exactly 1 weight in layer '%s' "
              "(the scale learnt by model '%s')",
              scale_layer_->Name(), Parent::Name());
-      return static_cast<Dtype>(0);
+      return Dtype(0);
     }
     return weight[0]->Data()[0];
   }
@@ -303,35 +311,35 @@ class ScaleByModel: public Model<Dtype> {
     State state(State::PHASE_TEST);
 
     // Get the data layer to keep track of the testing index
-    std::shared_ptr<ScaleByDataLayer<Dtype>> ScaleBy_data =
-      std::dynamic_pointer_cast<ScaleByDataLayer<Dtype>>(Parent::DataLayer());
-    if (!ScaleBy_data) {
+    std::shared_ptr<LinearRegressionDataLayer<Dtype>> linear_regression_data =
+      std::dynamic_pointer_cast<LinearRegressionDataLayer<Dtype>>(
+      Parent::DataLayer());
+    if (!linear_regression_data) {
       Report(kError, "No data layer found in model '%s'", Parent::Name());
-      return static_cast<Dtype>(0);
+      return Dtype(0);
     }
 
     uint32_t step = 0;
-    Dtype acc     = static_cast<Dtype>(0);
-    while (!ScaleBy_data->TestingDone()) {
+    Dtype acc     = Dtype(0);
+    while (!linear_regression_data->TestingDone()) {
       // Current test index
-      uint32_t index = ScaleBy_data->TestIndex();
+      uint32_t index = linear_regression_data->TestIndex();
 
       // Inference
       Parent::Forward(state);
 
       // Actual batch size = where we are - where we were
-      uint32_t actual_batch_size = ScaleBy_data->TestIndex() - index;
+      uint32_t actual_batch_size = linear_regression_data->TestIndex() - index;
 
       const Dtype* label_data = label_->Data();
       const Dtype* dist2_data = dist2_->Data();
 
       // Batch accuracy
-      Dtype bacc = static_cast<Dtype>(0);
+      Dtype bacc = Dtype(0);
       for (uint32_t batch = 0; batch < actual_batch_size; ++batch) {
         Dtype dist2_orig = scale_ * label_data[batch] - label_data[batch];
         dist2_orig      *= dist2_orig;
-        bacc            += static_cast<Dtype>(1) -
-                           dist2_data[batch] / dist2_orig;
+        bacc            += Dtype(1) - dist2_data[batch] / dist2_orig;
       }
 
       // Go to next step and accumulate the accuracy
@@ -343,7 +351,7 @@ class ScaleByModel: public Model<Dtype> {
     if (step) {
       return acc / step;
     }
-    return static_cast<Dtype>(1);
+    return Dtype(1);
   }
 };
 
@@ -367,31 +375,31 @@ int main(int argc, char* argv[]) {
   Dtype learning_rate, decay_rate, momentum,
         reg, clip, lr_scale, mult, min, max;
   uint32_t num_step, print_each, test_each, save_each, lr_scale_each;
-  arg.Arg<uint32_t>("-batchsize"   , 1       , &batch_size);
-  arg.Arg<Dtype>   ("-lr"          , 0.01    , &learning_rate);
-  arg.Arg<Dtype>   ("-decayrate"   , 0.999   , &decay_rate);
-  arg.Arg<Dtype>   ("-momentum"    , 0.9     , &momentum);
-  arg.Arg<Dtype>   ("-reg"         , 0.000001, &reg);
-  arg.Arg<Dtype>   ("-clip"        , 5.0     , &clip);
-  arg.Arg<uint32_t>("-numstep"     , 100000  , &num_step);
-  arg.Arg<uint32_t>("-printeach"   , 0       , &print_each);
-  arg.Arg<uint32_t>("-testeach"    , 0       , &test_each);
-  arg.Arg<uint32_t>("-saveeach"    , 0       , &save_each);
-  arg.Arg<uint32_t>("-lrscaleeach" , 0       , &lr_scale_each);
-  arg.Arg<Dtype>   ("-lrscale"     , 1.0     , &lr_scale);
-  arg.Arg<Dtype>   ("-scale"       , 3.14    , &mult);
-  arg.Arg<Dtype>   ("-min"         , 0.0     , &min);
-  arg.Arg<Dtype>   ("-max"         , 1.0     , &max);
+  arg.Arg<uint32_t>("-batchsize"  , 1              , &batch_size);
+  arg.Arg<Dtype>   ("-lr"         , Dtype(0.01)    , &learning_rate);
+  arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999)   , &decay_rate);
+  arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)     , &momentum);
+  arg.Arg<Dtype>   ("-reg"        , Dtype(0.000001), &reg);
+  arg.Arg<Dtype>   ("-clip"       , Dtype(5)       , &clip);
+  arg.Arg<uint32_t>("-numstep"    , 100000         , &num_step);
+  arg.Arg<uint32_t>("-printeach"  , 0              , &print_each);
+  arg.Arg<uint32_t>("-testeach"   , 0              , &test_each);
+  arg.Arg<uint32_t>("-saveeach"   , 0              , &save_each);
+  arg.Arg<uint32_t>("-lrscaleeach", 0              , &lr_scale_each);
+  arg.Arg<Dtype>   ("-lrscale"    , Dtype(1)       , &lr_scale);
+  arg.Arg<Dtype>   ("-scale"      , Dtype(3.14)    , &mult);
+  arg.Arg<Dtype>   ("-min"        , Dtype(0)       , &min);
+  arg.Arg<Dtype>   ("-max"        , Dtype(1)       , &max);
 
   if ((!train && !model_path) || arg.ArgExists("-h")) {
     Report(kInfo, "Usage: %s [-train] [-scale <SCALE>] [-min <MIN>] "
-           "[-max <MAX>] [-model <path/to/scale_by/model>]", argv[0]);
+           "[-max <MAX>] [-model <path/to/linear_regression/model>]", argv[0]);
     return -1;
   }
 
   // Default model and solver names
   if (!model_name) {
-    model_name = "scale_by";
+    model_name = "linear_regression";
   }
   if (!solver_type) {
     solver_type = "rmsprop";
@@ -411,9 +419,10 @@ int main(int argc, char* argv[]) {
   Report(kInfo, "Scale learning rate each: %d", lr_scale_each);
   Report(kInfo, "Learning rate scale     : %f", lr_scale);
 
-  // Create the model
-  ScaleByModel<Dtype> model(model_name, batch_size, mult, min, max,
-                            num_step * batch_size, num_step * batch_size);
+  // Create the model: make sure we have enough data to cover exactly 1 epoch
+  LinearRegressionModel<Dtype> model(model_name, batch_size, mult, min, max,
+                                     num_step * batch_size,
+                                     num_step * batch_size);
 
   // Load the model if one is specified
   if (model_path) {

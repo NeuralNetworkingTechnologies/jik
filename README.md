@@ -95,13 +95,16 @@ Make sure you downloaded the data before running the sandbox examples.
 
 Then, from the build directory, you can run the following sandbox examples.
 
-### Scale by
+### Linear regression
 
-This example will try to learn a scale value.
+This example will try to learn a scale value using linear regression.
+This example will generate a lot of value X and an equal amount of values Y so
+that Y = (N + eps) * X.
+The model (made of 1 scale layer) will try to learn the value of N. 
 
-Training to learn the scale value 3.14:
+Training the scale model to learn value 3.14:
 ```sh
-sandbox/scale_by/scale_by -train -scale 3.14
+sandbox/linear_regression/linear_regression -train -scale 3.14
 ```
 
 

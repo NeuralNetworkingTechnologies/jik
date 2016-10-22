@@ -77,8 +77,8 @@ class LayerBatchNorm: public Layer<Dtype> {
 
     // Moving average
     // The moving average is multiplied by the fraction after each step
-    moving_avg_ = static_cast<Dtype>(1);
-    param.Get("moving_avg_frac", static_cast<Dtype>(0.99), &moving_avg_frac_);
+    moving_avg_ = Dtype(1);
+    param.Get("moving_avg_frac", Dtype(0.99), &moving_avg_frac_);
 
     // Create 2 weights: mean and standard deviation
     // The standard deviation is actually stored as its inverse for efficiency
@@ -119,16 +119,16 @@ class LayerBatchNorm: public Layer<Dtype> {
                            Dtype* mean, Dtype* variance) {
     if (!data || !data_size) {
       if (mean) {
-        *mean = static_cast<Dtype>(0);
+        *mean = Dtype(0);
       }
       if (variance) {
-        *variance = static_cast<Dtype>(0);
+        *variance = Dtype(0);
       }
       return;
     }
 
     // Calculate the mean
-    Dtype mean_val = static_cast<Dtype>(0);
+    Dtype mean_val = Dtype(0);
     for (uint32_t i = 0; i < data_size; ++i) {
       mean_val += data[i];
     }
@@ -139,7 +139,7 @@ class LayerBatchNorm: public Layer<Dtype> {
 
     if (variance) {
       // Calculate the variance
-      Dtype variance_val = static_cast<Dtype>(0);
+      Dtype variance_val = Dtype(0);
       for (uint32_t i = 0; i < data_size; ++i) {
         Dtype dx      = data[i] - mean_val;
         variance_val += dx * dx;
@@ -164,11 +164,13 @@ class LayerBatchNorm: public Layer<Dtype> {
     Dtype*       mean_cur_data    = mean_cur_->Data();
     Dtype*       std_dev_cur_data = std_dev_cur_->Data();
 
-    uint32_t data_size      = Parent::out_[0]->size[0] *
-                              Parent::out_[0]->size[1];
-    uint32_t num_channel    = Parent::out_[0]->size[2];
-    uint32_t batch_size     = Parent::out_[0]->size[3];
-    Dtype    inv_batch_size = static_cast<Dtype>(1) / batch_size;
+    uint32_t data_size   = Parent::out_[0]->size[0] * Parent::out_[0]->size[1];
+    uint32_t num_channel = Parent::out_[0]->size[2];
+    uint32_t batch_size  = Parent::out_[0]->size[3];
+    if (!batch_size) {
+      return;
+    }
+    Dtype inv_batch_size = Dtype(1) / batch_size;
 
     if (state.phase == State::PHASE_TRAIN) {
       // Calculate the mean and variance for each channel across all batches
@@ -176,8 +178,8 @@ class LayerBatchNorm: public Layer<Dtype> {
       // During testing, we only use the precomputed
       // global mean and standard deviation
       for (uint32_t channel = 0; channel < num_channel; ++channel) {
-        mean_cur_data[channel]    = static_cast<Dtype>(0);
-        std_dev_cur_data[channel] = static_cast<Dtype>(0);
+        mean_cur_data[channel]    = Dtype(0);
+        std_dev_cur_data[channel] = Dtype(0);
         for (uint32_t batch = 0; batch < batch_size; ++batch) {
           uint32_t offset = (batch * num_channel + channel) * data_size;
           Dtype mean_val, variance_val;
@@ -190,15 +192,14 @@ class LayerBatchNorm: public Layer<Dtype> {
         // We actually save the inverse of the standard deviation
         // sqrt(var(in) + eps)
         std_dev_cur_data[channel] =
-          static_cast<Dtype>(1) / std::sqrt(std_dev_cur_data[channel] +
+          Dtype(1) / std::sqrt(std_dev_cur_data[channel] +
           std::numeric_limits<Dtype>::epsilon());
 
         // Global mean and standard deviation
-        mean_data[channel] =
-          (static_cast<Dtype>(1) - moving_avg_) * mean_data[channel] +
-          moving_avg_ * mean_cur_data[channel];
+        mean_data[channel] = (Dtype(1) - moving_avg_) * mean_data[channel] +
+                             moving_avg_ * mean_cur_data[channel];
         std_dev_data[channel] =
-          (static_cast<Dtype>(1) - moving_avg_) * std_dev_data[channel] +
+          (Dtype(1) - moving_avg_) * std_dev_data[channel] +
           moving_avg_ * std_dev_cur_data[channel];
       }
 

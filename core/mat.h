@@ -89,7 +89,7 @@ class Mat {
     size[1] = m;
     size[2] = d;
     size[3] = b;
-    data.resize(size[0] * size[1] * size[2] * size[3], static_cast<Dtype>(0));
+    data.resize(size[0] * size[1] * size[2] * size[3], Dtype(0));
     if (init_deriv) {
       deriv = std::make_shared<Mat<Dtype>>(size, false);
     }
@@ -163,7 +163,7 @@ class Mat {
    *  \return Matrix size (1D)
    */
   uint32_t Size() const {
-    return static_cast<uint32_t>(data.size());
+    return uint32_t(data.size());
   }
 
   /*!

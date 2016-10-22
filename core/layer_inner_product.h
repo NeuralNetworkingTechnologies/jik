@@ -82,8 +82,7 @@ class LayerInnerProduct: public Layer<Dtype> {
     // (gaussian distribution)
     Parent::weight_.resize(use_bias ? 2 : 1);
     Parent::weight_[0] = Rand<Dtype>::GenMatGauss(
-      num_input, num_output, 1, 1, static_cast<Dtype>(0),
-      std::sqrt(static_cast<Dtype>(1) / num_input));
+      num_input, num_output, 1, 1, Dtype(0), std::sqrt(Dtype(1) / num_input));
 
     // Create the bias and initialize it to 0
     if (use_bias) {
@@ -124,7 +123,7 @@ class LayerInnerProduct: public Layer<Dtype> {
       uint32_t in_offset  = num_in * batch;
       uint32_t out_offset = num_out * batch;
       for (uint32_t i = 0; i < num_out; ++i) {
-        Dtype ip = static_cast<Dtype>(0);
+        Dtype ip = Dtype(0);
         for (uint32_t j = 0; j < num_in; ++j) {
           uint32_t filter_index = num_in * i + j;
           ip += in_data[in_offset + j] * filter_data[filter_index];

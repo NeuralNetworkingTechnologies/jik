@@ -75,7 +75,7 @@ class LayerScale: public Layer<Dtype> {
     // Create the scale and initialize it to 1
     Parent::weight_[0] = std::make_shared<Mat<Dtype>>(
       1, 1, Parent::in_[0]->size[2]);
-    Parent::weight_[0]->Set(static_cast<Dtype>(1));
+    Parent::weight_[0]->Set(Dtype(1));
 
     // Create the bias and initialize it to 0
     if (use_bias) {

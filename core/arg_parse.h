@@ -87,22 +87,22 @@ class ArgParse {
    *  \param[out] val: arg value
    *  \return     Arg found?
    */
-  template <typename T>
-  bool Arg(const char* arg, T* val = nullptr,
-           const T* default_val = nullptr) const {
+  template <typename Dtype>
+  bool Arg(const char* arg, Dtype* val = nullptr,
+           const Dtype* default_val = nullptr) const {
     const char* sval = Arg(arg);
     if (!sval) {
       if (val) {
         if (default_val) {
           *val = *default_val;
         } else {
-          *val = static_cast<T>(0);
+          *val = Dtype(0);
         }
       }
       return false;
     }
     if (val) {
-      *val = static_cast<T>(std::stod(sval));
+      *val = Dtype(std::stod(sval));
     }
     return true;
   }
@@ -116,8 +116,9 @@ class ArgParse {
    *  \param[out] val: arg value
    *  \return     Arg found?
    */
-  template <typename T>
-  bool Arg(const char* arg, const T& default_val, T* val = nullptr) const {
+  template <typename Dtype>
+  bool Arg(const char* arg, const Dtype& default_val,
+           Dtype* val = nullptr) const {
     return Arg(arg, val, &default_val);
   }
 

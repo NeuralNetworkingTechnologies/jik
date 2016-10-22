@@ -151,7 +151,7 @@ class Rnn: public Recurrent<Dtype> {
 
     Parent::in_ = std::make_shared<Mat<Dtype>>(wil_->size[1],
                                                1, 1, batch_size);
-    Parent::in_->Data()[index] = static_cast<Dtype>(1);
+    Parent::in_->Data()[index] = Dtype(1);
 
     std::shared_ptr<Mat<Dtype>> x = Parent::Add(
       std::make_shared<LayerMult<Dtype>>("",

@@ -106,9 +106,8 @@ class LayerConv: public Layer<Dtype> {
     // Initialize the filter matrix with some random values
     // (gaussian distribution)
     Parent::weight_[0] = Rand<Dtype>::GenMatGauss(
-      filter_width_, filter_height_, num_input, num_output_,
-      static_cast<Dtype>(0), std::sqrt(static_cast<Dtype>(1) /
-      (filter_width_ * filter_height_ * num_input)));
+      filter_width_, filter_height_, num_input, num_output_, Dtype(0),
+      std::sqrt(Dtype(1) / (filter_width_ * filter_height_ * num_input)));
 
     // Create the bias and initialize it to 0
     if (use_bias) {
@@ -156,15 +155,15 @@ class LayerConv: public Layer<Dtype> {
           int32_t start_y = -padding_y_;
           for (uint32_t out_y = 0; out_y < out_height_; start_y += stride_y_,
             ++out_y) {
-            Dtype val = static_cast<Dtype>(0);
+            Dtype val = Dtype(0);
             for (uint32_t x = 0; x < filter_width_; ++x) {
               int32_t in_x = start_x + x;
-              if (in_x < 0 || static_cast<uint32_t>(in_x) >= in_width) {
+              if (in_x < 0 || uint32_t(in_x) >= in_width) {
                 continue;
               }
               for (uint32_t y = 0; y < filter_height_; ++y) {
                 int32_t in_y = start_y + y;
-                if (in_y < 0 || static_cast<uint32_t>(in_y) >= in_height) {
+                if (in_y < 0 || uint32_t(in_y) >= in_height) {
                   continue;
                 }
                 for (uint32_t in_channel = 0; in_channel < num_input;
@@ -231,12 +230,12 @@ class LayerConv: public Layer<Dtype> {
             Dtype dv = out_deriv_data[deriv_index];
             for (uint32_t x = 0; x < filter_width_; ++x) {
               int32_t in_x = start_x + x;
-              if (in_x < 0 || static_cast<uint32_t>(in_x) >= in_width) {
+              if (in_x < 0 || uint32_t(in_x) >= in_width) {
                 continue;
               }
               for (uint32_t y = 0; y < filter_height_; ++y) {
                 int32_t in_y = start_y + y;
-                if (in_y < 0 || static_cast<uint32_t>(in_y) >= in_height) {
+                if (in_y < 0 || uint32_t(in_y) >= in_height) {
                   continue;
                 }
                 for (uint32_t in_channel = 0; in_channel < num_input;

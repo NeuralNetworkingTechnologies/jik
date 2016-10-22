@@ -89,8 +89,9 @@ class Param {
    *  \param[out] val        : parameter value
    *  \return     Parameter found?
    */
-  template <typename T>
-  bool Get(const char* name, T* val, const T* default_val = nullptr) const {
+  template <typename Dtype>
+  bool Get(const char* name, Dtype* val,
+           const Dtype* default_val = nullptr) const {
     std::string sval;
     if (!Get(name, &sval)) {
       if (val) {
@@ -98,13 +99,13 @@ class Param {
           *val = *default_val;
         } else {
           Report(kError, "No value '%s' found", name);
-          *val = static_cast<T>(0);
+          *val = Dtype(0);
         }
       }
       return false;
     }
     if (val) {
-      *val = static_cast<T>(std::stod(sval));
+      *val = Dtype(std::stod(sval));
     }
     return true;
   }
@@ -118,8 +119,8 @@ class Param {
    *  \param[out] val        : parameter value
    *  \return     Parameter found?
    */
-  template <typename T>
-  bool Get(const char* name, const T& default_val, T* val) const {
+  template <typename Dtype>
+  bool Get(const char* name, const Dtype& default_val, Dtype* val) const {
     return Get(name, val, &default_val);
   }
 
@@ -150,8 +151,8 @@ class Param {
    *  \param[in] name: parameter name
    *  \param[in] val : parameter value
    */
-  template <typename T>
-  void Add(const char* name, T val) {
+  template <typename Dtype>
+  void Add(const char* name, Dtype val) {
     Add(name, std::to_string(val).c_str());
   }
 

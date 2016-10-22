@@ -106,8 +106,7 @@ class LayerTanh: public Layer<Dtype> {
     // in_deriv = (1 - out^2) * out_deriv
     for (uint32_t i = 0; i < Parent::out_[0]->Size(); ++i) {
       Dtype val         = out_data[i];
-      in_deriv_data[i] += (static_cast<Dtype>(1) - val * val) *
-                          out_deriv_data[i];
+      in_deriv_data[i] += (Dtype(1) - val * val) * out_deriv_data[i];
     }
   }
 };

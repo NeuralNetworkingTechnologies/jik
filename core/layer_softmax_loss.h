@@ -110,21 +110,20 @@ class LayerSoftMaxLoss: public LayerLoss<Dtype> {
       }
 
       // out = norm(exp(in - max))
-      Dtype sum = static_cast<Dtype>(0);
+      Dtype sum = Dtype(0);
       for (uint32_t i = 0; i < data_size; ++i) {
         out_data[offset + i] = std::exp(in_data[offset + i] - val_max);
         sum                 += out_data[offset + i];
       }
-      sum = static_cast<Dtype>(1) / sum;
+      sum = Dtype(1) / sum;
       for (uint32_t i = 0; i < data_size; ++i) {
         out_data[offset + i] *= sum;
       }
     }
 
-    loss_data[0] = static_cast<Dtype>(0);
+    loss_data[0] = Dtype(0);
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
-      uint32_t index = batch * data_size +
-                       static_cast<uint32_t>(label_data[batch]);
+      uint32_t index = batch * data_size + uint32_t(label_data[batch]);
       loss_data[0] -= std::log(out_data[index]);
     }
     loss_data[0] /= batch_size;
@@ -147,9 +146,8 @@ class LayerSoftMaxLoss: public LayerLoss<Dtype> {
 
     Parent::in_[0]->deriv->data = Parent::out_[1]->data;
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
-      uint32_t index = batch * data_size +
-                       static_cast<uint32_t>(label_data[batch]);
-      in_deriv_data[index] -= static_cast<Dtype>(1);
+      uint32_t index        = batch * data_size + uint32_t(label_data[batch]);
+      in_deriv_data[index] -= Dtype(1);
     }
   }
 };

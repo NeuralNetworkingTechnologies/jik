@@ -72,8 +72,8 @@ class EltwiseScaleLayer: public Layer<Dtype> {
           Parent::Name());
 
     // Parameters
-    param.Get("scale", static_cast<Dtype>(1), &scale_);
-    param.Get("bias" , static_cast<Dtype>(0), &bias_);
+    param.Get("scale", Dtype(1), &scale_);
+    param.Get("bias" , Dtype(0), &bias_);
 
     // Create 1 output, same size as the input
     Parent::out_.resize(1);

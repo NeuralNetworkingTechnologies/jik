@@ -105,7 +105,7 @@ class SolverRMSprop: public Solver<Dtype> {
       // RMSprop adaptive learning rate
       Dtype dv  = weight_deriv_data[i] / batch_size;
       Dtype ddv = decay_rate * weight_prev_data[i] +
-                  (static_cast<Dtype>(1) - decay_rate) * dv * dv;
+                  (Dtype(1) - decay_rate) * dv * dv;
 
       // Save previous value for next iteration
       weight_prev_data[i] = ddv;

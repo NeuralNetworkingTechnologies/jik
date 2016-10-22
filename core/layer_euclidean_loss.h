@@ -91,15 +91,14 @@ class LayerEuclideanLoss: public LayerLoss<Dtype> {
     const Dtype* in1_data  = Parent::in_[0]->Data();
     const Dtype* in2_data  = Parent::in_[1]->Data();
 
-    loss_data[0] = static_cast<Dtype>(0);
-
+    loss_data[0] = Dtype(0);
     if (!Parent::in_[0]->Size()) {
       return;
     }
 
     // out0 = sum((in1 - in2) * (in1 - in2))
     // out1 = (in1 - in2) * (in1 - in2)
-    Dtype inv_size = static_cast<Dtype>(1) / Parent::in_[0]->Size();
+    Dtype inv_size = Dtype(1) / Parent::in_[0]->Size();
     for (uint32_t i = 0; i < Parent::in_[0]->Size(); ++i) {
       out_data[i]   = (in1_data[i] - in2_data[i]) *
                       (in1_data[i] - in2_data[i]);
