@@ -26,10 +26,11 @@ There's no dependency by default, making it easy to compile, port and run.
 * data: placeholder for the datasets (with some scripts to download them)
 * model: pre-trained models
 * sandbox: examples
-  * mnist  : mnist classifier (classifying the mnist dataset)
-  * cifar10: cifar10 classifier (classifying the cifar10 dataset)
-  * textgen: example of RNN (or LSTM) model taking an input text and
-    predicting sentences
+  * linear_regression: scale model trying to learn linear regression
+  * mnist            : mnist classifier (classifying the mnist dataset)
+  * cifar10          : cifar10 classifier (classifying the cifar10 dataset)
+  * textgen          : RNN (or LSTM) model taking an input text and predicting
+                       sentences
 
 ## Requirements
 
