@@ -85,8 +85,10 @@ From the root directory, you can run:
 ```
 in order to get all the data needed to run the sandbox examples.
 
-The following will be downloaded:
+The following will be downloaded/generated:
 * MNIST dataset
+* Synthetic MNIST dataset (rendered)
+* SVHN dataset (Street View House Numbers)
 * CIFAR10 dataset
 * A text file with Shakespeare input
 
@@ -108,7 +110,6 @@ Training the scale model to learn value 3.14:
 sandbox/linear_regression/linear_regression -train -scale 3.14
 ```
 
-
 ### MNIST classifier
 
 This example will classify the MNIST dataset (see here:
@@ -116,23 +117,23 @@ http://yann.lecun.com/exdb/mnist).
 
 Training a CNN model, without batch normalization:
 ```sh
-sandbox/mnist/mnist -dataset ../data/mnist -train
+sandbox/mnist/mnist -dataset ../data/mnist -train -name mnist_conv
 ```
 
 Training a CNN model, without batch normalization, using a SGD solver (instead
 of a RMSprop solver by default):
 ```sh
-sandbox/mnist/mnist -dataset ../data/mnist -train -solver sgd
+sandbox/mnist/mnist -dataset ../data/mnist -train -solver sgd -name mnist_sgd_conv
 ```
 
 Training a CNN model, with batch normalization:
 ```sh
-sandbox/mnist/mnist -dataset ../data/mnist -train -bn
+sandbox/mnist/mnist -dataset ../data/mnist -train -bn -name mnist_conv_bn
 ```
 
 Training a FC model:
 ```sh
-sandbox/mnist/mnist -dataset ../data/mnist -train -fc
+sandbox/mnist/mnist -dataset ../data/mnist -train -fc -name mnist_fc
 ```
 
 Testing a pretrained CNN model:
@@ -147,7 +148,7 @@ sandbox/mnist/mnist -dataset ../data/mnist -fc -model ../model/mnist_fc.model
 
 Fine-tuning a pretrained CNN model:
 ```sh
-sandbox/mnist/mnist -dataset ../data/mnist -model ../model/mnist_conv.model -train -name mnist_finetune
+sandbox/mnist/mnist -dataset ../data/mnist -model ../model/mnist_conv.model -train -name mnist_conv_finetune
 ```
 
 Testing a pretrained CNN model on the synthetic (rendered) MNIST dataset:
@@ -160,7 +161,7 @@ real MNIST dataset but hasn't seen any rendered data.
 Let's try to train a model on both the real and synthetic MNIST datasets
 (mixed model):
 ```sh
-sandbox/mnist/mnist -dataset ../data/mnist:../data/mnist_render -train
+sandbox/mnist/mnist -dataset ../data/mnist:../data/mnist_render -train -name mnist_mix_conv
 ```
 
 Let's now test this new mixed model (pretrained) on the real MNIST dataset,
@@ -179,6 +180,45 @@ sandbox/mnist/mnist -dataset ../data/mnist_render -fc -model ../model/mnist_mix_
 sandbox/mnist/mnist -dataset ../data/mnist:../data/mnist_render -fc -model ../model/mnist_mix_fc.model
 ```
 
+### SVHN classifier
+
+This example will classify the SVHN dataset (see here:
+http://ufldl.stanford.edu/housenumbers).
+
+Since we converted the dataset to a MNIST dataset format, we will use the
+MNIST classifier here as well.
+
+Training a CNN model, without batch normalization:
+```sh
+sandbox/mnist/mnist -dataset ../data/svhn -train -name svhn_conv
+```
+
+Training a CNN model, without batch normalization, using a SGD solver (instead
+of a RMSprop solver by default):
+```sh
+sandbox/mnist/mnist -dataset ../data/svhn -train -solver sgd -name svhn_sgd_conv
+```
+
+Training a CNN model, with batch normalization:
+```sh
+sandbox/mnist/mnist -dataset ../data/svhn -train -bn -name svhn_conv_bn
+```
+
+Training a FC model:
+```sh
+sandbox/mnist/mnist -dataset ../data/svhn -train -fc -name svhn_fc
+```
+
+Testing a pretrained CNN model:
+```sh
+sandbox/mnist/mnist -dataset ../data/svhn -model ../model/svhn_conv.model
+```
+
+Testing a pretrained FC model:
+```sh
+sandbox/mnist/mnist -dataset ../data/svhn -fc -model ../model/svhn_fc.model
+```
+
 ### CIFAR10 classifier
 
 This example will classify the CIFAR10 dataset (see here:
@@ -186,23 +226,23 @@ http://www.cs.toronto.edu/~kriz/cifar.html).
 
 Training a model, without batch normalization:
 ```sh
-sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train
+sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train -name cifar10
 ```
 
 Training a model, without batch normalization, using a SGD solver (instead of
 a RMSprop solver by default):
 ```sh
-sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train -solver sgd
+sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train -solver sgd -name cifar10_sgd
 ```
 
 Training a model, with batch normalization:
 ```sh
-sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train -bn
+sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train -bn -name cifar10_bn
 ```
 
 Training a model, grayscaling the input images (from RGB):
 ```sh
-sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train -gray
+sandbox/cifar10/cifar10 -dataset ../data/cifar10 -train -gray -name cifar10_gray
 ```
 
 Testing a pretrained model:

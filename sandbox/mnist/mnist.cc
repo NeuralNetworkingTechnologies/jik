@@ -809,7 +809,7 @@ int main(int argc, char* argv[]) {
   Dtype learning_rate, decay_rate, momentum, reg, clip, lr_scale;
   uint32_t num_step, print_each, test_each, save_each, lr_scale_each;
   arg.Arg<uint32_t>("-batchsize"  , 100            , &batch_size);
-  arg.Arg<Dtype>   ("-lr"         , Dtype(0.001)   , &learning_rate);
+  arg.Arg<Dtype>   ("-lr"         , Dtype(0.0005)  , &learning_rate);
   arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999)   , &decay_rate);
   arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)     , &momentum);
   arg.Arg<Dtype>   ("-reg"        , Dtype(0.000001), &reg);

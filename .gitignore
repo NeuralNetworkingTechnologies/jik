@@ -7,5 +7,6 @@ build
 # Downloaded datasets
 data/mnist
 data/mnist_render
+data/svhn
 data/cifar10
 data/textgen

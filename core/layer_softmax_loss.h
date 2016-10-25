@@ -92,12 +92,14 @@ class LayerSoftMaxLoss: public LayerLoss<Dtype> {
     const Dtype* in_data    = Parent::in_[0]->Data();
     const Dtype* label_data = Parent::in_[1]->Data();
 
+    loss_data[0] = Dtype(0);
+
     uint32_t data_size = Parent::out_[1]->size[0] * Parent::out_[1]->size[1] *
                          Parent::out_[1]->size[2];
-    if (!data_size) {
+    uint32_t batch_size = Parent::out_[1]->size[3];
+    if (!data_size || !batch_size) {
       return;
     }
-    uint32_t batch_size = Parent::out_[1]->size[3];
 
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
       // Find the max value for the current data
@@ -121,12 +123,11 @@ class LayerSoftMaxLoss: public LayerLoss<Dtype> {
       }
     }
 
-    loss_data[0] = Dtype(0);
+    Dtype inv_size = Dtype(1) / batch_size;
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
       uint32_t index = batch * data_size + uint32_t(label_data[batch]);
-      loss_data[0] -= std::log(out_data[index]);
+      loss_data[0] -= std::log(out_data[index]) * inv_size;
     }
-    loss_data[0] /= batch_size;
   }
 
   /*!

@@ -165,11 +165,20 @@ class Cifar10Dataset: public Dataset {
       img.image.resize(image_size);
       uint32_t buffer_index = 0;
       for (size_t j = 0; j < image_size; ++j) {
-        img.image[j] = Dtype(0);
-        for (size_t k = 0; k < num_channel_diff; ++k) {
-          img.image[j] += Dtype(buffer[buffer_index++]);
+        if (num_channel_diff == 1) {
+          img.image[j] = Dtype(buffer[buffer_index++]);
+        } else if (num_channel_diff == 3) {
+          // Convert RGB to grayscale (luminosity)
+          img.image[j] = Dtype(0.2126 * buffer[buffer_index + 0]) +
+                         Dtype(0.7152 * buffer[buffer_index + 1]) +
+                         Dtype(0.0722 * buffer[buffer_index + 2]);
+          buffer_index += 3;
+        } else {
+          Report(kError, "Unknown image depth in '%s'", file_dataset.c_str());
+          std::fclose(fp);
+          return false;
         }
-        img.image[j] /= num_channel_diff * 0xFF;
+        img.image[j] /= 0xFF;
       }
     }
 
