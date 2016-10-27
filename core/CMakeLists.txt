@@ -24,8 +24,5 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(core)
-file(GLOB_RECURSE CC *.cc)
 file(GLOB_RECURSE H *.h)
-add_library(core STATIC ${CC})
-install(TARGETS core DESTINATION lib)
 install(FILES ${H} DESTINATION include/jik/core)
