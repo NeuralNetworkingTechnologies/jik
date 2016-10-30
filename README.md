@@ -54,7 +54,7 @@ Note that you need a C++ 11 (aka C++ 0x) friendly C++ compiler.
 This project is using cmake.
 Make sure you have at least version 2.8.
 
-From the root directory, you can run:
+From the root directory, run:
 ```sh
 ./build.sh
 ```
@@ -65,6 +65,24 @@ mkdir build
 cd build
 cmake ..
 make -j8
+```
+
+To build a debug version, run:
+```sh
+./build.sh debug
+```
+
+Which is equivalent to:
+```sh
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+make -j8
+```
+
+To clean everything, run:
+```sh
+./build.sh clean
 ```
 
 ## Code style (cpplint)
