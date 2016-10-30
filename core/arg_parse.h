@@ -81,10 +81,10 @@ class ArgParse {
   /*!
    * Get an arg value (numeric).
    *
-   *  \param[in]  arg: arg name
+   *  \param[in]  arg        : arg name
    *  \param[in]  default_val: default arg value
    *
-   *  \param[out] val: arg value
+   *  \param[out] val        : arg value
    *  \return     Arg found?
    */
   template <typename Dtype>
@@ -110,10 +110,10 @@ class ArgParse {
   /*!
    * Get an arg value (numeric).
    *
-   *  \param[in]  arg: arg name
+   *  \param[in]  arg        : arg name
    *  \param[in]  default_val: default arg value
    *
-   *  \param[out] val: arg value
+   *  \param[out] val        : arg value
    *  \return     Arg found?
    */
   template <typename Dtype>

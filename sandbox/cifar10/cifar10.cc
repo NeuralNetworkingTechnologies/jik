@@ -23,6 +23,7 @@
  */
 
 
+#include <sys/stat.h>
 #include <core/arg_parse.h>
 #include <core/log.h>
 #include <core/dataset.h>
@@ -106,17 +107,17 @@ class Cifar10Dataset: public Dataset {
    * Check here for the dataset format:
    * http://www.cs.toronto.edu/~kriz/cifar.html
    *
-   *  \param[in]  file_dataset: file containing the dataset
+   *  \param[in]  dataset_file: file containing the dataset
    *
-   *  \param[out] dataset: cifar10 dataset
+   *  \param[out] dataset     : cifar10 dataset
    *  \return     Error?
    */
-  bool ReadDataset(const std::string& file_dataset,
+  bool ReadDataset(const char* dataset_file,
                    std::vector<Image>* dataset) {
     // Open the images file
-    std::FILE* fp = std::fopen(file_dataset.c_str(), "rb");
+    std::FILE* fp = std::fopen(dataset_file, "rb");
     if (!fp) {
-      Report(kError, "Can't open file '%s'", file_dataset.c_str());
+      Report(kError, "Can't open file '%s'", dataset_file);
       return false;
     }
 
@@ -152,13 +153,13 @@ class Cifar10Dataset: public Dataset {
       Image& img = (*dataset)[index + i];
       uint32_t size_to_read = label_size * sizeof(uint8_t);
       if (std::fread(&img.label, 1, size_to_read, fp) != size_to_read) {
-        Report(kError, "Can't read images in '%s'", file_dataset.c_str());
+        Report(kError, "Can't read images in '%s'", dataset_file);
         std::fclose(fp);
         return false;
       }
       size_to_read = cifar10_image_size * sizeof(uint8_t);
       if (std::fread(&buffer[0], 1, size_to_read, fp) != size_to_read) {
-        Report(kError, "Can't read images in '%s'", file_dataset.c_str());
+        Report(kError, "Can't read images in '%s'", dataset_file);
         std::fclose(fp);
         return false;
       }
@@ -174,7 +175,7 @@ class Cifar10Dataset: public Dataset {
                          Dtype(0.0722 * buffer[buffer_index + 2]);
           buffer_index += 3;
         } else {
-          Report(kError, "Unknown image depth in '%s'", file_dataset.c_str());
+          Report(kError, "Unknown image depth in '%s'", dataset_file);
           std::fclose(fp);
           return false;
         }
@@ -243,6 +244,39 @@ class Cifar10Dataset: public Dataset {
   }
 
   /*!
+   * Load a cifar10 dataset.
+   *
+   *  \param[in]  dataset_path: path to the dataset
+   *  \param[in]  prefix      : dataset prefix
+   *
+   *  \param[out] dataset     : cifar10 dataset
+   *  \return     Error?
+   */
+  bool LoadDataset(const char* dataset_path, const char* prefix,
+                   std::vector<Image>* dataset) {
+    bool res;
+    std::string dataset_file = std::string(dataset_path) + "/" +
+                               std::string(prefix) + "_batch.bin";
+    struct stat buffer;
+    if (stat(dataset_file.c_str(), &buffer)) {
+      res          = true;
+      size_t index = 1;
+      while (true) {
+        dataset_file = std::string(dataset_path) + "/" + std::string(prefix) +
+                       "_batch_" + std::to_string(index) + ".bin";
+        if (stat(dataset_file.c_str(), &buffer)) {
+          break;
+        }
+        res = ReadDataset(dataset_file.c_str(), dataset) && res;
+        ++index;
+      }
+    } else {
+      res = ReadDataset(dataset_file.c_str(), dataset);
+    }
+    return res;
+  }
+
+  /*!
    * Load the dataset.
    *
    *  \param[in]  dataset_path: path to the dataset root directory
@@ -260,23 +294,9 @@ class Cifar10Dataset: public Dataset {
       std::string spath = std::string(path);
 
       // Training set
-      std::string train1_file(spath + "/data_batch_1.bin");
-      std::string train2_file(spath + "/data_batch_2.bin");
-      std::string train3_file(spath + "/data_batch_3.bin");
-      std::string train4_file(spath + "/data_batch_4.bin");
-      std::string train5_file(spath + "/data_batch_5.bin");
-      if (!ReadDataset(train1_file, &train_) ||
-          !ReadDataset(train2_file, &train_) ||
-          !ReadDataset(train3_file, &train_) ||
-          !ReadDataset(train4_file, &train_) ||
-          !ReadDataset(train5_file, &train_)) {
+      if (!LoadDataset(spath.c_str(), "data", &train_) ||
+          !LoadDataset(spath.c_str(), "test", &test_)) {
         return false;
-      }
-
-      // Testing set
-      std::string test_file(spath + "/test_batch.bin");
-      if (!ReadDataset(test_file, &test_)) {
-          return false;
       }
 
       // Go to next path

@@ -96,7 +96,7 @@ class MnistDataset: public Dataset {
    *  \param[in]  file_image: file containing the images
    *  \param[in]  file_label: file containing the labels
    *
-   *  \param[out] dataset: mnist dataset
+   *  \param[out] dataset   : mnist dataset
    *  \return     Error?
    */
   bool ReadDataset(const std::string& file_image,

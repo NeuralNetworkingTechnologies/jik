@@ -5,7 +5,7 @@ MODE=$1
 DATA_DIR=$(dirname "$0")/data
 
 if [ $MODE == "clean" ] ; then
-  rm -rf $CWD/data/{mnist,mnist_render,svhn,cifar10,textgen}
+  rm -rf $DATA_DIR/{mnist,mnist_render,svhn,cifar10,textgen}
 else
   $DATA_DIR/mnist.sh
   $DATA_DIR/mnist_render.sh
