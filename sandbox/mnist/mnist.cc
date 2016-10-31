@@ -228,6 +228,13 @@ class MnistDataset: public Dataset {
 
       // Save the label
       img.label = labels[i];
+      // Check the label is between [0, 9]
+      if (img.label > 9) {
+        Report(kError, "Invalid label %d in file '%s'",
+               img.label, file_label.c_str());
+        std::fclose(fp);
+        return false;
+      }
     }
 
     return true;

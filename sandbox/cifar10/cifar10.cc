@@ -157,6 +157,13 @@ class Cifar10Dataset: public Dataset {
         std::fclose(fp);
         return false;
       }
+      // Check the label is between [0, 9]
+      if (img.label > 9) {
+        Report(kError, "Invalid label %d in file '%s'",
+               img.label, dataset_file);
+        std::fclose(fp);
+        return false;
+      }
       size_to_read = cifar10_image_size * sizeof(uint8_t);
       if (std::fread(&buffer[0], 1, size_to_read, fp) != size_to_read) {
         Report(kError, "Can't read images in '%s'", dataset_file);
