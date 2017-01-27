@@ -113,7 +113,7 @@ class TextgenDataset: public Dataset {
       return false;
     }
 
-    while (getline(fp, line)) {
+    while (std::getline(fp, line)) {
       CleanString(&line);
       if (line.empty()) {
         continue;
@@ -576,23 +576,23 @@ int main(int argc, char* argv[]) {
         clip, lr_scale, temperature, range;
   uint32_t batch_size, num_step, print_each, test_each, save_each,
            lr_scale_each, num_predict, embed_size, hs;
-  arg.Arg<uint32_t>("-batchsize"  , 100            , &batch_size);
-  arg.Arg<Dtype>   ("-lr"         , Dtype(0.001)   , &learning_rate);
-  arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999)   , &decay_rate);
-  arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)     , &momentum);
-  arg.Arg<Dtype>   ("-reg"        , Dtype(0.000001), &reg);
-  arg.Arg<Dtype>   ("-clip"       , Dtype(5)       , &clip);
-  arg.Arg<uint32_t>("-numstep"    , 50000          , &num_step);
-  arg.Arg<uint32_t>("-printeach"  , 100            , &print_each);
-  arg.Arg<uint32_t>("-testeach"   , 500            , &test_each);
-  arg.Arg<uint32_t>("-saveeach"   , 500            , &save_each);
-  arg.Arg<uint32_t>("-lrscaleeach", 10000          , &lr_scale_each);
-  arg.Arg<Dtype>   ("-lrscale"    , Dtype(0.1)     , &lr_scale);
-  arg.Arg<Dtype>   ("-temperature", Dtype(1)       , &temperature);
-  arg.Arg<uint32_t>("-numpredict" , 10             , &num_predict);
-  arg.Arg<uint32_t>("-embedsize"  , 5              , &embed_size);
-  arg.Arg<uint32_t>("-hs"         , 20             , &hs);
-  arg.Arg<Dtype>   ("-range"      , Dtype(0.2)     , &range);
+  arg.Arg<uint32_t>("-batchsize"  , 100         , &batch_size);
+  arg.Arg<Dtype>   ("-lr"         , Dtype(0.001), &learning_rate);
+  arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999), &decay_rate);
+  arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)  , &momentum);
+  arg.Arg<Dtype>   ("-reg"        , Dtype(0.001), &reg);
+  arg.Arg<Dtype>   ("-clip"       , Dtype(5)    , &clip);
+  arg.Arg<uint32_t>("-numstep"    , 50000       , &num_step);
+  arg.Arg<uint32_t>("-printeach"  , 100         , &print_each);
+  arg.Arg<uint32_t>("-testeach"   , 500         , &test_each);
+  arg.Arg<uint32_t>("-saveeach"   , 500         , &save_each);
+  arg.Arg<uint32_t>("-lrscaleeach", 10000       , &lr_scale_each);
+  arg.Arg<Dtype>   ("-lrscale"    , Dtype(0.1)  , &lr_scale);
+  arg.Arg<Dtype>   ("-temperature", Dtype(1)    , &temperature);
+  arg.Arg<uint32_t>("-numpredict" , 10          , &num_predict);
+  arg.Arg<uint32_t>("-embedsize"  , 5           , &embed_size);
+  arg.Arg<uint32_t>("-hs"         , 20          , &hs);
+  arg.Arg<Dtype>   ("-range"      , Dtype(0.2)  , &range);
 
   if (!dataset_path || arg.ArgExists("-h")) {
     Report(kInfo, "Usage: %s -dataset <path/to/text/file> "

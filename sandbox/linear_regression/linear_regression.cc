@@ -375,21 +375,21 @@ int main(int argc, char* argv[]) {
   Dtype learning_rate, decay_rate, momentum,
         reg, clip, lr_scale, mult, min, max;
   uint32_t num_step, print_each, test_each, save_each, lr_scale_each;
-  arg.Arg<uint32_t>("-batchsize"  , 1              , &batch_size);
-  arg.Arg<Dtype>   ("-lr"         , Dtype(0.01)    , &learning_rate);
-  arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999)   , &decay_rate);
-  arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)     , &momentum);
-  arg.Arg<Dtype>   ("-reg"        , Dtype(0.000001), &reg);
-  arg.Arg<Dtype>   ("-clip"       , Dtype(5)       , &clip);
-  arg.Arg<uint32_t>("-numstep"    , 100000         , &num_step);
-  arg.Arg<uint32_t>("-printeach"  , 0              , &print_each);
-  arg.Arg<uint32_t>("-testeach"   , 0              , &test_each);
-  arg.Arg<uint32_t>("-saveeach"   , 0              , &save_each);
-  arg.Arg<uint32_t>("-lrscaleeach", 0              , &lr_scale_each);
-  arg.Arg<Dtype>   ("-lrscale"    , Dtype(1)       , &lr_scale);
-  arg.Arg<Dtype>   ("-scale"      , Dtype(3.14)    , &mult);
-  arg.Arg<Dtype>   ("-min"        , Dtype(0)       , &min);
-  arg.Arg<Dtype>   ("-max"        , Dtype(1)       , &max);
+  arg.Arg<uint32_t>("-batchsize"  , 1           , &batch_size);
+  arg.Arg<Dtype>   ("-lr"         , Dtype(0.01) , &learning_rate);
+  arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999), &decay_rate);
+  arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)  , &momentum);
+  arg.Arg<Dtype>   ("-reg"        , Dtype(0.001), &reg);
+  arg.Arg<Dtype>   ("-clip"       , Dtype(5)    , &clip);
+  arg.Arg<uint32_t>("-numstep"    , 100000      , &num_step);
+  arg.Arg<uint32_t>("-printeach"  , 0           , &print_each);
+  arg.Arg<uint32_t>("-testeach"   , 0           , &test_each);
+  arg.Arg<uint32_t>("-saveeach"   , 0           , &save_each);
+  arg.Arg<uint32_t>("-lrscaleeach", 0           , &lr_scale_each);
+  arg.Arg<Dtype>   ("-lrscale"    , Dtype(1)    , &lr_scale);
+  arg.Arg<Dtype>   ("-scale"      , Dtype(3.14) , &mult);
+  arg.Arg<Dtype>   ("-min"        , Dtype(0)    , &min);
+  arg.Arg<Dtype>   ("-max"        , Dtype(1)    , &max);
 
   if ((!train && !model_path) || arg.ArgExists("-h")) {
     Report(kInfo, "Usage: %s [-train] [-scale <SCALE>] [-min <MIN>] "

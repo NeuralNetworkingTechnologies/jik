@@ -119,8 +119,8 @@ class SolverRMSprop: public Solver<Dtype> {
 
       // Update and regularize
       weight_data[i] -= learning_rate * (dv / std::sqrt(weight_prev_data[i] +
-        std::numeric_limits<Dtype>::epsilon())) +
-        reg * weight_data[i];
+        std::numeric_limits<Dtype>::epsilon()) +
+        reg * weight_data[i]);
     }
   }
 

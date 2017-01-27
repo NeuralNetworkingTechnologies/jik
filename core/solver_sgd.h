@@ -116,7 +116,7 @@ class SolverSGD: public Solver<Dtype> {
       }
 
       // Update and regularize
-      weight_data[i] -= learning_rate * dv + reg * weight_data[i];
+      weight_data[i] -= learning_rate * (dv + reg * weight_data[i]);
     }
   }
 
