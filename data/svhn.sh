@@ -21,3 +21,5 @@ $PYTHON $SVHN_DIR/svhn_to_cifar10.py -svhn $SVHN_DIR/test_32x32.mat -out $SVHN_D
 $WGET -P $SVHN_DIR http://ufldl.stanford.edu/housenumbers/train_32x32.mat
 $PYTHON $SVHN_DIR/svhn_to_mnist.py   -svhn $SVHN_DIR/train_32x32.mat -out $SVHN_DIR -prefix train
 $PYTHON $SVHN_DIR/svhn_to_cifar10.py -svhn $SVHN_DIR/train_32x32.mat -out $SVHN_DIR -prefix data
+rm -f $SVHN_DIR/svhn_to_mnist.py
+rm -f $SVHN_DIR/svhn_to_cifar10.py
