@@ -54,6 +54,7 @@ class LinearRegressionDataLayer: public LayerData<Dtype> {
   Dtype    scale_;                // Scale
   Dtype    min_;                  // Min input value
   Dtype    max_;                  // Max input value
+  Dtype    noise_;                // Noise value
   uint32_t dataset_train_size_;   // Dataset size (training)
   uint32_t dataset_test_size_;    // Dataset size (testing)
   uint32_t dataset_train_index_;  // Dataset index (training)
@@ -76,13 +77,15 @@ class LinearRegressionDataLayer: public LayerData<Dtype> {
     param.Get("batch_size", &batch_size);
     param.Get("scale"     , &scale_);
     param.Get("min"       , &min_);
+    param.Get("noise"     , &noise_);
     param.Get("max"       , &max_);
     param.Get("size_train", &dataset_train_size_);
     param.Get("size_test" , &dataset_test_size_);
 
     Report(kInfo, "Generating %d train and %d test values between [%f, %f] "
-           "and scaling them by %f",
-           dataset_train_size_, dataset_test_size_, min_, max_, scale_);
+           "and scaling them by %f (with a noise of %f)",
+           dataset_train_size_, dataset_test_size_,
+           min_, max_, scale_, noise_);
 
     // Set index at the beginning of the dataset
     dataset_train_index_ = dataset_test_index_ = 0;
@@ -166,6 +169,8 @@ class LinearRegressionDataLayer: public LayerData<Dtype> {
 
     std::mt19937 gen;
     std::uniform_real_distribution<Dtype> dist(min_, max_);
+    Dtype minmax = max_ - min_;
+    std::uniform_real_distribution<Dtype> dist_noise(Dtype(0), minmax);
 
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
       // Generate a unique seed based on the data index
@@ -175,15 +180,16 @@ class LinearRegressionDataLayer: public LayerData<Dtype> {
         seed += dataset_train_size_;
       }
       gen.seed(seed);
-      // Source value
+      // Input value
       output_data[batch] = dist(gen);
-      // Target value: (N + eps) * input
+      // Output value: N * input
       // We will try to find N through linear regression
-      // We add a small epsilon to the scale to make sure the output is not a
-      // linear combination of the input to complexify a bit the problem
-      label_data[batch] =
-        (scale_ + Dtype(0.001) * (Dtype(2) * dist(gen) - Dtype(1))) *
-        output_data[batch];
+      label_data[batch] = scale_ * output_data[batch];
+      if (std::abs(noise_) > std::numeric_limits<Dtype>::epsilon()) {
+        // We add some noise to make sure the output is not a linear
+        // combination of the input to make it more difficult to learn
+        label_data[batch] += noise_ * (dist_noise(gen) - Dtype(0.5) * minmax);
+      }
 
       // Go to the next value
       if (++*dataset_index >= *dataset_size) {
@@ -231,14 +237,18 @@ class LinearRegressionModel: public Model<Dtype> {
   /*!
    * Constructor.
    *
-   *  \param[in]  name        : model name
-   *  \param[in]  batch_size  : matrix size (batch size)
-   *  \param[in]  use_fc      : use fully-connected network?
-   *  \param[in]  use_bn      : use batch norm?
+   *  \param[in]  name      : model name
+   *  \param[in]  batch_size: matrix size (batch size)
+   *  \param[in]  scale     : scale value to learn
+   *  \param[in]  min       : data min value (lower boundary)
+   *  \param[in]  max       : data max value (upper boundary)
+   *  \param[in]  noise     : noise intensity to add to the data output
+   *  \param[in]  size_train: training set size
+   *  \param[in]  size_test : testing set size
    */
-  LinearRegressionModel(const char* name, uint32_t batch_size, Dtype scale,
-                        Dtype min, Dtype max, Dtype size_train,
-                        Dtype size_test):
+  LinearRegressionModel(const char* name, uint32_t batch_size,
+                        Dtype scale, Dtype min, Dtype max, Dtype noise,
+                        uint32_t size_train, uint32_t size_test):
     Model<Dtype>(name) {
     // Save the scale
     scale_ = scale;
@@ -249,6 +259,7 @@ class LinearRegressionModel: public Model<Dtype> {
     data_param.Add("scale"     , scale);
     data_param.Add("min"       , min);
     data_param.Add("max"       , max);
+    data_param.Add("noise"     , noise);
     data_param.Add("size_train", size_train);
     data_param.Add("size_test" , size_test);
 
@@ -263,7 +274,7 @@ class LinearRegressionModel: public Model<Dtype> {
     // Output of previous layer
     Parent::out_ = Parent::in_;
 
-    // Scale layer (we disable the bias term)
+    // Scale layer (we disable the bias term, we only learn the scale)
     Param scale_param;
     scale_param.Add("use_bias", false);
     scale_layer_ = std::make_shared<LayerScale<Dtype>>("scale",
@@ -373,27 +384,29 @@ int main(int argc, char* argv[]) {
   bool        train        = arg.ArgExists("-train");
   uint32_t batch_size;
   Dtype learning_rate, decay_rate, momentum,
-        reg, clip, lr_scale, mult, min, max;
+        reg, clip, lr_scale, mult, min, max, noise;
   uint32_t num_step, print_each, test_each, save_each, lr_scale_each;
-  arg.Arg<uint32_t>("-batchsize"  , 1           , &batch_size);
-  arg.Arg<Dtype>   ("-lr"         , Dtype(0.01) , &learning_rate);
-  arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999), &decay_rate);
-  arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)  , &momentum);
-  arg.Arg<Dtype>   ("-reg"        , Dtype(0.001), &reg);
-  arg.Arg<Dtype>   ("-clip"       , Dtype(5)    , &clip);
-  arg.Arg<uint32_t>("-numstep"    , 100000      , &num_step);
-  arg.Arg<uint32_t>("-printeach"  , 0           , &print_each);
-  arg.Arg<uint32_t>("-testeach"   , 0           , &test_each);
-  arg.Arg<uint32_t>("-saveeach"   , 0           , &save_each);
-  arg.Arg<uint32_t>("-lrscaleeach", 0           , &lr_scale_each);
-  arg.Arg<Dtype>   ("-lrscale"    , Dtype(1)    , &lr_scale);
-  arg.Arg<Dtype>   ("-scale"      , Dtype(3.14) , &mult);
-  arg.Arg<Dtype>   ("-min"        , Dtype(0)    , &min);
-  arg.Arg<Dtype>   ("-max"        , Dtype(1)    , &max);
+  arg.Arg<uint32_t>("-batchsize"  , 1                   , &batch_size);
+  arg.Arg<Dtype>   ("-lr"         , Dtype(0.01)         , &learning_rate);
+  arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999)        , &decay_rate);
+  arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)          , &momentum);
+  arg.Arg<Dtype>   ("-reg"        , Dtype(0.001)        , &reg);
+  arg.Arg<Dtype>   ("-clip"       , Dtype(5)            , &clip);
+  arg.Arg<uint32_t>("-numstep"    , 100000              , &num_step);
+  arg.Arg<uint32_t>("-printeach"  , 0                   , &print_each);
+  arg.Arg<uint32_t>("-testeach"   , 0                   , &test_each);
+  arg.Arg<uint32_t>("-saveeach"   , 0                   , &save_each);
+  arg.Arg<uint32_t>("-lrscaleeach", 0                   , &lr_scale_each);
+  arg.Arg<Dtype>   ("-lrscale"    , Dtype(1)            , &lr_scale);
+  arg.Arg<Dtype>   ("-scale"      , Dtype(3.14159265359), &mult);
+  arg.Arg<Dtype>   ("-min"        , Dtype(0)            , &min);
+  arg.Arg<Dtype>   ("-max"        , Dtype(1)            , &max);
+  arg.Arg<Dtype>   ("-noise"      , Dtype(0.001)        , &noise);
 
   if ((!train && !model_path) || arg.ArgExists("-h")) {
     Report(kInfo, "Usage: %s [-train] [-scale <SCALE>] [-min <MIN>] "
-           "[-max <MAX>] [-model <path/to/linear_regression/model>]", argv[0]);
+           "[-max <MAX>] [-noise <NOISE>] "
+           "[-model <path/to/linear_regression/model>]", argv[0]);
     return -1;
   }
 
@@ -420,7 +433,8 @@ int main(int argc, char* argv[]) {
   Report(kInfo, "Learning rate scale     : %f", lr_scale);
 
   // Create the model: make sure we have enough data to cover exactly 1 epoch
-  LinearRegressionModel<Dtype> model(model_name, batch_size, mult, min, max,
+  LinearRegressionModel<Dtype> model(model_name, batch_size,
+                                     mult, min, max, noise,
                                      num_step * batch_size,
                                      num_step * batch_size);
 

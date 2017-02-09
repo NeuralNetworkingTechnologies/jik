@@ -19,6 +19,9 @@ I tried to keep the design of the system very simple and lightweight so it's
 easy to parse and understand.
 There's no dependency by default, making it easy to compile, port and run.
 
+A TensorFlow version of the sandbox examples is avalable here for validation:
+https://github.com/oliviersoares/tf
+
 ## Structure
 
 * core: main library, including layers, graph, model and solver
@@ -118,14 +121,16 @@ Then, from the build directory, you can run the following sandbox examples.
 
 ### Linear regression
 
-This example will try to learn a scale value using linear regression.
-We will generate some values X and an equal amount of values Y so that:
-Y = (N + eps) * X.
-The model (made of 1 scale layer) will try to learn the value of N. 
+This example will try to learn a scalar value using linear regression.
+We generate bunch of input values X and output values Y so that:
+  Y = N * X + eps
+(eps is a small noise added to the output values to make the learning process
+more difficult)
+We try to learn the value of N, given the input and output values.
 
-Training the scale model to learn value 3.14:
+Training the scale model to learn value 3.14159265359:
 ```sh
-sandbox/linear_regression/linear_regression -train -scale 3.14
+sandbox/linear_regression/linear_regression -train -scale 3.14159265359
 ```
 
 ### MNIST classifier
