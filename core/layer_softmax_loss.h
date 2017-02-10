@@ -123,6 +123,8 @@ class LayerSoftMaxLoss: public LayerLoss<Dtype> {
       }
     }
 
+    // Cross entropy between the prediction (output of the network)
+    // and the label (true probability)
     Dtype inv_size = Dtype(1) / batch_size;
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
       uint32_t index = batch * data_size + uint32_t(label_data[batch]);

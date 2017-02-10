@@ -392,7 +392,7 @@ int main(int argc, char* argv[]) {
   arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)          , &momentum);
   arg.Arg<Dtype>   ("-reg"        , Dtype(0.001)        , &reg);
   arg.Arg<Dtype>   ("-clip"       , Dtype(5)            , &clip);
-  arg.Arg<uint32_t>("-numstep"    , 100000              , &num_step);
+  arg.Arg<uint32_t>("-numstep"    , 10000               , &num_step);
   arg.Arg<uint32_t>("-printeach"  , 0                   , &print_each);
   arg.Arg<uint32_t>("-testeach"   , 0                   , &test_each);
   arg.Arg<uint32_t>("-saveeach"   , 0                   , &save_each);
