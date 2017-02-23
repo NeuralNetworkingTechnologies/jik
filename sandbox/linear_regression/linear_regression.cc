@@ -169,7 +169,7 @@ class LinearRegressionDataLayer: public LayerData<Dtype> {
 
     std::mt19937 gen;
     std::uniform_real_distribution<Dtype> dist(min_, max_);
-    Dtype minmax = max_ - min_;
+    Dtype minmax = scale_ * (max_ - min_);
     std::uniform_real_distribution<Dtype> dist_noise(Dtype(0), minmax);
 
     for (uint32_t batch = 0; batch < batch_size; ++batch) {

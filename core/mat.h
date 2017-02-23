@@ -40,7 +40,7 @@ namespace jik {
  *  \brief  Matrix class
  *
  * This class is used to save the activations or weights.
- * It also store the derivative matrix.
+ * It also store eventually the partial derivatives (gradiants).
  *
  * The matrix has 4 dimensions n*m*d*b:
  *  + n can be interpreted as the number of columns (or width)
@@ -50,6 +50,11 @@ namespace jik {
  *
  * For example, a matrix representing 10 640x480 RGB images
  * will have its dimensions set to 640*480*3*10.
+ *
+ * This type of data structure is also called tensor or multidimensional array
+ * in some framework. The fact that we are setting the dimensions to 4 is to
+ * allow implicit reshaping when going from fully-connected layers to
+ * convolution layers (or vice versa).
  */
 template <typename Dtype>
 class Mat {
@@ -62,7 +67,7 @@ class Mat {
  public:
   uint32_t                    size[4];  // Matrix size
   std::vector<Dtype>          data;     // Matrix data
-  std::shared_ptr<Mat<Dtype>> deriv;    // Derived matrix
+  std::shared_ptr<Mat<Dtype>> deriv;    // Derived matrix (gradiants)
 
 
   // Public methods

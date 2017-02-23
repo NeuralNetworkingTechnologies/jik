@@ -49,8 +49,16 @@ namespace jik {
  * result of a given operation and calculated during the forward pass.
  * A layer eventually has weights that the model will try to learn.
  *
- * The input and weight derivatives are calculated during the backward pass
- * and propagated back to the previous layer.
+ * The gradiants are calculated during the backward
+ * pass and propagated back to the previous layer.
+ *
+ * The name layer here is used broadly for any function part of a network
+ * taking N inputs and producing M outputs.
+ * Some frameworks call this an op (operator) or unit while reserving the name
+ * layer for a group of units with some weights
+ * (e.g. Conv+ReLU+Pool = 1 layer with 3 units, or 1 layer of width 3).
+ * We will call all these units layers, independently from the fact that they
+ * may have some weight or not (i.e. if they learn some parameters or not).
  */
 template <typename Dtype>
 class Layer {

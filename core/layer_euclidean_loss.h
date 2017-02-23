@@ -38,7 +38,7 @@ namespace jik {
 
 /*!
  *  \class  LayerEuclideanLoss
- *  \brief  Euclidean loss function
+ *  \brief  Euclidean (quadratic) loss function
  */
 template <typename Dtype>
 class LayerEuclideanLoss: public LayerLoss<Dtype> {
