@@ -576,7 +576,7 @@ int main(int argc, char* argv[]) {
         clip, lr_scale, temperature, range;
   uint32_t batch_size, num_step, print_each, test_each, save_each,
            lr_scale_each, num_predict, embed_size, hs;
-  arg.Arg<uint32_t>("-batchsize"  , 100         , &batch_size);
+  arg.Arg<uint32_t>("-batchsize"  , 128         , &batch_size);
   arg.Arg<Dtype>   ("-lr"         , Dtype(0.001), &learning_rate);
   arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999), &decay_rate);
   arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)  , &momentum);
@@ -584,8 +584,8 @@ int main(int argc, char* argv[]) {
   arg.Arg<Dtype>   ("-clip"       , Dtype(5)    , &clip);
   arg.Arg<uint32_t>("-numstep"    , 50000       , &num_step);
   arg.Arg<uint32_t>("-printeach"  , 100         , &print_each);
-  arg.Arg<uint32_t>("-testeach"   , 500         , &test_each);
-  arg.Arg<uint32_t>("-saveeach"   , 500         , &save_each);
+  arg.Arg<uint32_t>("-testeach"   , 1000        , &test_each);
+  arg.Arg<uint32_t>("-saveeach"   , 1000        , &save_each);
   arg.Arg<uint32_t>("-lrscaleeach", 10000       , &lr_scale_each);
   arg.Arg<Dtype>   ("-lrscale"    , Dtype(0.1)  , &lr_scale);
   arg.Arg<Dtype>   ("-temperature", Dtype(1)    , &temperature);

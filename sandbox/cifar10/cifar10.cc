@@ -310,6 +310,14 @@ class Cifar10Dataset: public Dataset {
       path = std::strtok(nullptr, ":");
     }
 
+    // Randomly shuffle the dataset to have uniform mini-batches with a good
+    // estimation of the gradient: we want each mini-batch gradient to be very
+    // close to the batch (dataset) gradient
+    std::random_device rd;
+    std::default_random_engine re(rd());
+    std::shuffle(train_.begin(), train_.end(), re);
+    std::shuffle(test_.begin() , test_.end() , re);
+
     return true;
   }
 
@@ -781,7 +789,7 @@ int main(int argc, char* argv[]) {
   uint32_t batch_size;
   Dtype learning_rate, decay_rate, momentum, reg, clip, lr_scale;
   uint32_t num_step, print_each, test_each, save_each, lr_scale_each;
-  arg.Arg<uint32_t>("-batchsize"  , 100          , &batch_size);
+  arg.Arg<uint32_t>("-batchsize"  , 128          , &batch_size);
   arg.Arg<Dtype>   ("-lr"         , Dtype(0.0005), &learning_rate);
   arg.Arg<Dtype>   ("-decayrate"  , Dtype(0.999) , &decay_rate);
   arg.Arg<Dtype>   ("-momentum"   , Dtype(0.9)   , &momentum);
@@ -789,8 +797,8 @@ int main(int argc, char* argv[]) {
   arg.Arg<Dtype>   ("-clip"       , Dtype(5)     , &clip);
   arg.Arg<uint32_t>("-numstep"    , 50000        , &num_step);
   arg.Arg<uint32_t>("-printeach"  , 100          , &print_each);
-  arg.Arg<uint32_t>("-testeach"   , 500          , &test_each);
-  arg.Arg<uint32_t>("-saveeach"   , 500          , &save_each);
+  arg.Arg<uint32_t>("-testeach"   , 1000         , &test_each);
+  arg.Arg<uint32_t>("-saveeach"   , 1000         , &save_each);
   arg.Arg<uint32_t>("-lrscaleeach", 10000        , &lr_scale_each);
   arg.Arg<Dtype>   ("-lrscale"    , Dtype(0.1)   , &lr_scale);
 

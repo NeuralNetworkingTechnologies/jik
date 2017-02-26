@@ -145,6 +145,16 @@ class LayerConv: public Layer<Dtype> {
     uint32_t batch_size = Parent::in_[0]->size[3];
 
     // out = filter * in + bias
+    // Notes: This is a fairly non-optimized way to perform convolution
+    //        One trick is to linearize all the images of the mini-batch into a
+    //        big 2D matrix (down from a 4D matrix), effectively converting one
+    //        images into a 1D column, each row storing a different image from
+    //        the mini-batch
+    //        We also should be using a good linear algebra library (BLAS,
+    //        Eigen, etc.) to perform the matrix multiplication: it will be
+    //        much faster and padding/stride will be handled more efficiently
+    //        All these optimizations are beyond the scope of this project but
+    //        would be welcome additions
     for (uint32_t batch = 0; batch < batch_size; ++batch) {
       uint32_t in_offset  = in_width   * in_height   * num_input   * batch;
       uint32_t out_offset = out_width_ * out_height_ * num_output_ * batch;

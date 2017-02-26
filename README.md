@@ -19,8 +19,37 @@ I tried to keep the design of the system very simple and lightweight so it's
 easy to parse and understand.
 There's no dependency by default, making it easy to compile, port and run.
 
+The main goal of this project is to understand fairly simply the nuts and
+bolts of the math behind deep learning. We did not focus on speed but rather
+on readability of the code.
+
+For better efficiency, one would rather use linear algebra libraries for low
+level math functions, especially for convolutions and other vector/matrix or
+matrix/matrix additions or multiplications. For example one could use eigen or
+lapack libraries like BLAS or GPU-based solutions like cuBLAS or use low-level
+deep neural network primitives from cuDNN.
+
+This is beyond the scope of this project but would be a welcome addition.
+
 A TensorFlow version of the sandbox examples is avalable here for validation:
 https://github.com/oliviersoares/tf
+
+Running the same CNN model to classify MNIST in JIK and TensorFlow using a
+batch size of 128 over 1000 iterations with RMSprop as a solver, we get using
+a high end 2015 Macbook Pro (2.8 Ghz i7 Intel processor):
+
+JIK             : time for 1000 steps: 2min 13sec, test accuracy: 97.95%
+
+TensorFlow (CPU): time for 1000 steps: 0min 30sec, test accuracy: 98.32%
+
+Using a fully-connected architecture (instead of CNN), using the same
+hardware and hyper-parameters, we get:
+
+JIK             : time for 1000 steps: 0min 14sec, test accuracy: 95.85%
+
+TensorFlow (CPU): time for 1000 steps: 0min 04sec, test accuracy: 89.21%
+
+All these results were averaged over 10 runs.
 
 ## Structure
 
