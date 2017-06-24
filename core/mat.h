@@ -40,7 +40,7 @@ namespace jik {
  *  \brief  Matrix class
  *
  * This class is used to save the activations or weights.
- * It also store eventually the partial derivatives (gradiants).
+ * It also store eventually the partial derivatives (jacobian).
  *
  * The matrix has 4 dimensions n*m*d*b:
  *  + n can be interpreted as the number of columns (or width)
@@ -67,7 +67,7 @@ class Mat {
  public:
   uint32_t                    size[4];  // Matrix size
   std::vector<Dtype>          data;     // Matrix data
-  std::shared_ptr<Mat<Dtype>> deriv;    // Derived matrix (gradiants)
+  std::shared_ptr<Mat<Dtype>> deriv;    // Gradients matrix (jacobian)
 
 
   // Public methods

@@ -49,7 +49,7 @@ namespace jik {
  * result of a given operation and calculated during the forward pass.
  * A layer eventually has weights that the model will try to learn.
  *
- * The gradiants are calculated during the backward
+ * The gradients are calculated during the backward
  * pass and propagated back to the previous layer.
  *
  * The name layer here is used broadly for any function part of a network
